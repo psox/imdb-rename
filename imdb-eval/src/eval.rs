@@ -149,7 +149,7 @@ impl Spec {
     ) -> Result<Evaluation> {
         let searcher = Searcher::new(self.index(data_dir, eval_dir)?);
         Ok(Evaluation {
-            evaluator: Evaluator { spec: self, searcher: searcher },
+            evaluator: Evaluator { spec: self, searcher },
             tasks: TRUTH.clone().tasks.into_iter(),
         })
     }
@@ -164,7 +164,7 @@ impl Spec {
     ) -> Result<Evaluation> {
         let searcher = Searcher::new(self.index(data_dir, eval_dir)?);
         Ok(Evaluation {
-            evaluator: Evaluator { spec: self, searcher: searcher },
+            evaluator: Evaluator { spec: self, searcher },
             tasks: Truth::from_path(truth_path)?.tasks.into_iter(),
         })
     }
@@ -280,7 +280,7 @@ impl Summary {
     pub fn from_task_results(results: &[TaskResult]) -> Vec<Summary> {
         let mut grouped: BTreeMap<&str, Vec<&TaskResult>> = BTreeMap::new();
         for result in results {
-            grouped.entry(&result.name).or_insert(vec![]).push(result);
+            grouped.entry(&result.name).or_insert_with(|| vec![]).push(result);
         }
 
         let mut summaries = vec![];
@@ -382,7 +382,7 @@ impl<'s> Evaluator<'s> {
             name: self.spec.to_string(),
             query: task.query.clone(),
             answer: task.answer.clone(),
-            rank: rank,
+            rank,
             duration_seconds: fractional_seconds(&duration),
         })
     }
@@ -462,7 +462,7 @@ impl<'s> Evaluator<'s> {
 /// epsilon.
 fn approx_eq(x1: f64, x2: f64) -> bool {
     // We used a fixed error because it's good enough in practice.
-    (x1 - x2).abs() <= 0.0000000001
+    (x1 - x2).abs() <= 0.000_000_000_1
 }
 
 /// Returns the number of seconds in this duration in fraction form.

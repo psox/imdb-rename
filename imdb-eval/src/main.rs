@@ -161,16 +161,16 @@ impl Args {
             vec![NgramType::Window],
         )?;
         Ok(Args {
-            data_dir: data_dir,
+            data_dir,
             debug: matches.is_present("debug"),
             dry_run: matches.is_present("dry-run"),
-            eval_dir: eval_dir,
+            eval_dir,
             ngram_sizes: parse_many_lossy(matches, "ngram-size", vec![3])?,
-            ngram_types: ngram_types,
+            ngram_types,
             result_sizes: parse_many_lossy(matches, "result-size", vec![30])?,
-            scorers: scorers,
-            similarities: similarities,
-            specs: specs,
+            scorers,
+            similarities,
+            specs,
             summarize: matches.value_of_os("summarize").map(PathBuf::from),
             truth: matches.value_of_os("truth").map(PathBuf::from),
         })

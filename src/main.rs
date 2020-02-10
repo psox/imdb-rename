@@ -137,7 +137,7 @@ impl Args {
             matches
                 .values_of_os("file")
                 .map(|it| it.collect())
-                .unwrap_or(vec![]),
+                .unwrap_or_else(|| vec![]),
             matches.is_present("follow"),
         );
         let query = matches
@@ -150,7 +150,7 @@ impl Args {
         let index_dir = matches
             .value_of_os("index-dir")
             .map(PathBuf::from)
-            .unwrap_or(data_dir.join("index"));
+            .unwrap_or_else(|| data_dir.join("index"));
         let regex_episode = matches
             .value_of_lossy("re-episode")
             .unwrap()
@@ -168,19 +168,19 @@ impl Args {
             .unwrap()
             .parse()?;
         Ok(Args {
-            data_dir: data_dir,
+            data_dir,
             debug: matches.is_present("debug"),
-            files: files,
-            index_dir: index_dir,
+            files,
+            index_dir,
             ngram_size: matches.value_of_lossy("ngram-size").unwrap().parse()?,
             ngram_type: matches.value_of_lossy("ngram-type").unwrap().parse()?,
-            query: query,
-            regex_episode: regex_episode,
-            regex_season: regex_season,
-            regex_year: regex_year,
+            query,
+            regex_episode,
+            regex_season,
+            regex_year,
             update_data: matches.is_present("update-data"),
             update_index: matches.is_present("update-index"),
-            min_votes: min_votes,
+            min_votes,
         })
     }
 

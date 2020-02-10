@@ -70,7 +70,7 @@ impl Index {
         upper.push(0xFF);
 
         let mut stream = self.idx.range().ge(id).le(upper).into_stream();
-        while let Some(rating_bytes) = stream.next() {
+        if let Some(rating_bytes) = stream.next() {
             return Ok(Some(read_rating(rating_bytes)?));
         }
         Ok(None)
@@ -89,7 +89,7 @@ fn read_rating(bytes: &[u8]) -> Result<Rating> {
 
     let i = nul + 1;
     Ok(Rating {
-        id: id,
+        id,
         rating: BE::read_f32(&bytes[i..]),
         votes: BE::read_u32(&bytes[i+4..]),
     })
@@ -130,7 +130,7 @@ mod tests {
         let idx = Index::create(ctx.data_dir(), ctx.index_dir()).unwrap();
 
         let rat = idx.rating(b"tt0000001").unwrap().unwrap();
-        assert_eq!(rat.rating, 5.8);
+        assert!((rat.rating - 5.8).abs()<1e-10);
         assert_eq!(rat.votes, 1356);
 
         assert!(idx.rating(b"tt9999999").unwrap().is_none());

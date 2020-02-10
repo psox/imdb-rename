@@ -98,9 +98,9 @@ impl TitleKind {
     ///
     /// This string representation is intended to be the same string
     /// representation used in the IMDb data files.
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         use self::TitleKind::*;
-        match *self {
+        match self {
             Movie => "movie",
             Short => "short",
             TVEpisode => "tvEpisode",
@@ -115,10 +115,10 @@ impl TitleKind {
     }
 
     /// Returns true if and only if this kind represents a TV series.
-    pub fn is_tv_series(&self) -> bool {
+    pub fn is_tv_series(self) -> bool {
         use self::TitleKind::*;
 
-        match *self {
+        match self {
             TVMiniSeries | TVSeries => true,
             _ => false,
         }

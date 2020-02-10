@@ -50,8 +50,8 @@ impl Index {
         let seasons = unsafe { fst_set_file(index_dir.join(SEASONS))? };
         let tvshows = unsafe { fst_set_file(index_dir.join(TVSHOWS))? };
         Ok(Index {
-            seasons: seasons,
-            tvshows: tvshows,
+            seasons,
+            tvshows,
         })
     }
 
@@ -155,7 +155,7 @@ impl Index {
             .ge(episode_id)
             .le(upper)
             .into_stream();
-        while let Some(tvshow_bytes) = stream.next() {
+        if let Some(tvshow_bytes) = stream.next() {
             return Ok(Some(read_tvshow(tvshow_bytes)?));
         }
         Ok(None)
@@ -213,9 +213,9 @@ fn read_episode(bytes: &[u8]) -> Result<Episode> {
         Ok(id) => id,
     };
     Ok(Episode {
-        id: id,
-        tvshow_id: tvshow_id,
-        season: season,
+        id,
+        tvshow_id,
+        season,
         episode: epnum,
     })
 }
@@ -254,9 +254,9 @@ fn read_tvshow(bytes: &[u8]) -> Result<Episode> {
         Ok(tvshow_id) => tvshow_id,
     };
     Ok(Episode {
-        id: id,
-        tvshow_id: tvshow_id,
-        season: season,
+        id,
+        tvshow_id,
+        season,
         episode: epnum,
     })
 }

@@ -514,7 +514,7 @@ impl Query {
     fn needs_episode(&self) -> bool {
         !self.season.is_none()
         || !self.episode.is_none()
-        || !self.tvshow_id.is_none()
+        || self.tvshow_id.is_some()
     }
 }
 
@@ -675,8 +675,8 @@ impl Similarity {
     }
 
     /// Returns true if and only if no similarity function was selected.
-    pub fn is_none(&self) -> bool {
-        *self == Similarity::None
+    pub fn is_none(self) -> bool {
+        self == Similarity::None
     }
 
     /// Computes the similarity between the given strings according to the
@@ -684,8 +684,8 @@ impl Similarity {
     /// then this always returns `1.0`.
     ///
     /// The returned value is always in the range `(0, 1]`.
-    pub fn similarity(&self, q1: &str, q2: &str) -> f64 {
-        let sim = match *self {
+    pub fn similarity(self, q1: &str, q2: &str) -> f64 {
+        let sim = match self {
             Similarity::None => 1.0,
             Similarity::Levenshtein => {
                 let distance = strsim::levenshtein(q1, q2) as f64;

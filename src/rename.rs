@@ -534,9 +534,9 @@ impl CandidatePath {
                 }
             };
         Ok(CandidatePath {
-            parent: parent,
-            base_name: base_name,
-            ext: ext,
+            parent,
+            base_name,
+            ext,
         })
     }
 

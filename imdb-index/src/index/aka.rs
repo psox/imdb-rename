@@ -33,10 +33,7 @@ impl Index {
     /// Open an AKA index using the corresponding data and index directories.
     /// The data directory contains the IMDb data set while the index directory
     /// contains the index data files.
-    pub fn open<P1: AsRef<Path>, P2: AsRef<Path>>(
-        data_dir: P1,
-        index_dir: P2,
-    ) -> Result<Index> {
+    pub fn open<P1: AsRef<Path>, P2: AsRef<Path>>(data_dir: P1, index_dir: P2) -> Result<Index> {
         Ok(Index {
             // We claim it is safe to open the following memory map because we
             // don't mutate them and no other process (should) either.
@@ -47,10 +44,7 @@ impl Index {
 
     /// Create an AKA index by reading the AKA data from the given data
     /// directory and writing the index to the corresponding index directory.
-    pub fn create<P1: AsRef<Path>, P2: AsRef<Path>>(
-        data_dir: P1,
-        index_dir: P2,
-    ) -> Result<Index> {
+    pub fn create<P1: AsRef<Path>, P2: AsRef<Path>>(data_dir: P1, index_dir: P2) -> Result<Index> {
         let data_dir = data_dir.as_ref();
         let index_dir = index_dir.as_ref();
 
@@ -96,9 +90,7 @@ impl Index {
 /// The lifetime `'r` refers to the lifetime of the underlying AKA index
 /// reader.
 pub struct AKARecordIter<'r>(
-    Option<iter::Take<
-        csv::DeserializeRecordsIter<'r, io::Cursor<Mmap>, AKA>,
-    >>
+    Option<iter::Take<csv::DeserializeRecordsIter<'r, io::Cursor<Mmap>, AKA>>>,
 );
 
 impl<'r> Iterator for AKARecordIter<'r> {
@@ -149,7 +141,7 @@ impl<R: io::Read> AKAIndexRecords<R> {
     /// Create a new streaming iterator over indexable AKA records.
     fn new(rdr: csv::Reader<R>) -> AKAIndexRecords<R> {
         AKAIndexRecords {
-            rdr: rdr,
+            rdr,
             record: csv::ByteRecord::new(),
             done: false,
         }
@@ -171,7 +163,7 @@ impl<R: io::Read> Iterator for AKAIndexRecords<R> {
                     Err(err) => return Some(Err(Error::csv(err))),
                     Ok(v) => v,
                 }
-            }
+            };
         }
 
         if self.done {
@@ -179,10 +171,8 @@ impl<R: io::Read> Iterator for AKAIndexRecords<R> {
         }
         // Only initialize the record if this is our first go at it.
         // Otherwise, previous call leaves next record in `AKAIndexRecord`.
-        if self.record.is_empty() {
-            if !itry!(self.rdr.read_byte_record(&mut self.record)) {
-                return None;
-            }
+        if self.record.is_empty() && !itry!(self.rdr.read_byte_record(&mut self.record)) {
+            return None;
         }
         let mut irecord = AKAIndexRecord {
             id: self.record[0].to_vec(),
@@ -205,13 +195,12 @@ impl<R: io::Read> Iterator for AKAIndexRecords<R> {
 
 #[cfg(test)]
 mod tests {
-    use crate::util::csv_reader_builder;
     use super::*;
+    use crate::util::csv_reader_builder;
 
     #[test]
     fn aka_index_records1() {
-        let data =
-r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
+        let data = r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
 tt0117019	1	Hommes à l'huile	FR	\N	\N	\N	0
 tt0117019	2	Männer in Öl	DE	\N	\N	\N	0
 tt0117019	3	Men in Oil	XEU	en	festival	\N	0
@@ -229,9 +218,8 @@ tt0117021	8	Terror im Computer	DE	\N	\N	\N	0
 tt0117022	1	Menopause Song	CA	\N	\N	\N	0
 tt0117023	1	Les menteurs	FR	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr)
-            .collect::<Result<_>>()
-            .unwrap();
+        let records: Vec<AKAIndexRecord> =
+            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 5);
 
         assert_eq!(records[0].id, b"tt0117019");
@@ -252,8 +240,7 @@ tt0117023	1	Les menteurs	FR	\N	\N	\N	0";
 
     #[test]
     fn aka_index_records2() {
-        let data =
-r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
+        let data = r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
 tt0117019	1	Hommes à l'huile	FR	\N	\N	\N	0
 tt0117019	2	Männer in Öl	DE	\N	\N	\N	0
 tt0117019	3	Men in Oil	XEU	en	festival	\N	0
@@ -269,9 +256,8 @@ tt0117021	6	La mente de Menno	ES	\N	\N	\N	0
 tt0117021	7	Power.com	CA	en	video	\N	0
 tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr)
-            .collect::<Result<_>>()
-            .unwrap();
+        let records: Vec<AKAIndexRecord> =
+            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 3);
 
         assert_eq!(records[0].id, b"tt0117019");
@@ -286,8 +272,7 @@ tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
 
     #[test]
     fn aka_index_records3() {
-        let data =
-r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
+        let data = r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
 tt0117021	1	Menno's Mind	US	\N	\N	\N	0
 tt0117021	2	Menno's Mind	\N	\N	original	\N	1
 tt0117021	3	The Matrix 2	RU	\N	video	\N	0
@@ -297,9 +282,8 @@ tt0117021	6	La mente de Menno	ES	\N	\N	\N	0
 tt0117021	7	Power.com	CA	en	video	\N	0
 tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr)
-            .collect::<Result<_>>()
-            .unwrap();
+        let records: Vec<AKAIndexRecord> =
+            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 1);
 
         assert_eq!(records[0].id, b"tt0117021");
@@ -308,13 +292,11 @@ tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
 
     #[test]
     fn aka_index_records4() {
-        let data =
-r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
+        let data = r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
 tt0117021	1	Menno's Mind	US	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr)
-            .collect::<Result<_>>()
-            .unwrap();
+        let records: Vec<AKAIndexRecord> =
+            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 1);
 
         assert_eq!(records[0].id, b"tt0117021");

@@ -7,6 +7,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::str::{self, FromStr};
 use std::time::Instant;
+use std::f64;
 
 use byteorder::{ByteOrder, LE};
 use failure::ResultExt;
@@ -241,11 +242,11 @@ impl IndexReader {
         let config: Config = serde_json::from_reader(config_file)
             .map_err(|e| Error::config(e.to_string()))?;
         Ok(IndexReader {
-            config: config,
-            ngram: ngram,
-            postings: postings,
-            idmap: idmap,
-            norms: norms,
+            config,
+            ngram,
+            postings,
+            idmap,
+            norms,
         })
     }
 
@@ -299,7 +300,7 @@ impl CollectTopK {
     /// Build a new collector that collects at most `k` results.
     fn new(k: usize) -> CollectTopK {
         CollectTopK {
-            k: k,
+            k,
             queue: BinaryHeap::with_capacity(k),
             byid: FnvHashMap::default(),
         }
@@ -528,9 +529,9 @@ impl<'i> Disjunction<'i> {
     /// Create an empty disjunction that never matches anything.
     fn empty(index: &'i IndexReader, scorer: NameScorer) -> Disjunction<'i> {
         Disjunction {
-            index: index,
+            index,
             query_len: 0.0,
-            scorer: scorer,
+            scorer,
             queue: BinaryHeap::new(),
             is_done: true,
         }
@@ -750,8 +751,8 @@ impl<'i> PostingIter<'i> {
                 // If the term isn't in the index, then return an exhausted
                 // iterator.
                 return PostingIter {
-                    index: index,
-                    scorer: scorer,
+                    index,
+                    scorer,
                     count: 0.0,
                     postings: &[],
                     len: 0,
@@ -769,14 +770,14 @@ impl<'i> PostingIter<'i> {
         let df = len as f64;
         let okapi_idf = (1.0 + (corpus_count - df + 0.5) / (df + 0.5)).log2();
         let mut it = PostingIter {
-            index: index,
-            scorer: scorer,
+            index,
+            scorer,
             count: count as f64,
             postings: &postings[..4 * len],
-            len: len,
+            len,
             posting: None,
             docid: 0,
-            okapi_idf: okapi_idf,
+            okapi_idf,
         };
         // Advance to the first posting.
         it.next();
@@ -1004,13 +1005,13 @@ impl IndexWriter {
         let norms = CursorWriter::from_path(dir.join(NORMS))?;
         let config = CursorWriter::from_path(dir.join(CONFIG))?;
         Ok(IndexWriter {
-            ngram: ngram,
-            ngram_type: ngram_type,
-            ngram_size: ngram_size,
-            postings: postings,
-            idmap: idmap,
-            norms: norms,
-            config: config,
+           ngram,
+           ngram_type,
+           ngram_size,
+           postings,
+           idmap,
+           norms,
+           config,
             terms: FnvHashMap::default(),
             next_docid: 0,
             avg_document_len: 0.0,
@@ -1115,7 +1116,7 @@ impl Postings {
     /// doesn't exist, then create one (with a zero frequency) and return it.
     fn posting(&mut self, docid: DocID) -> &mut Posting {
         if self.list.last().map_or(true, |x| x.docid != docid) {
-            self.list.push(Posting { docid: docid, frequency: 0 });
+            self.list.push(Posting {docid, frequency: 0 });
         }
         // This unwrap is OK because if the list was empty when this method was
         // called, then we added an element above, and is thus now non-empty.
@@ -1155,8 +1156,8 @@ impl NameScorer {
     /// Return a string representation of this scorer.
     ///
     /// The string returned can be parsed back into a `NameScorer`.
-    pub fn as_str(&self) -> &'static str {
-        match *self {
+    pub fn as_str(self) -> &'static str {
+        match self {
             NameScorer::OkapiBM25 => "okapibm25",
             NameScorer::TFIDF => "tfidf",
             NameScorer::Jaccard => "jaccard",
@@ -1237,8 +1238,8 @@ impl NgramType {
     }
 
     /// Return a string representation of this type.
-    pub fn as_str(&self) -> &'static str {
-        match *self {
+    pub fn as_str(self) -> &'static str {
+        match self {
             NgramType::Window => "window",
             NgramType::Edge => "edge",
         }
@@ -1250,12 +1251,12 @@ impl NgramType {
     /// We don't use normal Rust iterators here because an internal iterator
     /// is much easier to implement.
     fn iter<'t, F: FnMut(&'t str)>(
-        &self,
+        self,
         size: usize,
         text: &'t str,
         f: F,
     ) {
-        match *self {
+        match self {
             NgramType::Window => NgramType::iter_window(size, text, f),
             NgramType::Edge => NgramType::iter_edge(size, text, f),
         }
@@ -1371,7 +1372,7 @@ mod tests {
     }
 
     /// Some names involving bruce.
-    const BRUCES: &'static [&'static str] = &[
+    const BRUCES: &[&str] = &[
         "Bruce Springsteen",  // 0
         "Bruce Kulick",       // 1
         "Bruce Arians",       // 2
@@ -1392,8 +1393,8 @@ mod tests {
         assert_eq!(results.len(), 7);
         // The top two hits are the shortest documents, because of Okapi-BM25's
         // length normalization.
-        assert_eq!(results[0].score(), 1.0);
-        assert_eq!(results[1].score(), 1.0);
+        assert!((results[0].score()-1.0).abs() < 1e-10);
+        assert!((results[1].score()-1.0).abs() < 1e-10);
         assert_eq!(ids(&results[0..2]), vec![3, 5]);
     }
 
