@@ -4,3 +4,5 @@
 **/*.rs.bk
 tags
 /tmp
+**/*.mp4
+**/*.mkv
