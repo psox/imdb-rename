@@ -1,11 +1,8 @@
-use std::fs::File;
-use std::io;
-use std::path::Path;
+use std::{fs::File, io, path::Path};
 
 use byteorder::{WriteBytesExt, LE};
 
-use crate::error::Result;
-use crate::util::create_file;
+use crate::{error::Result, util::create_file};
 
 /// Wraps any writer and records the current position in the writer.
 ///
@@ -41,26 +38,38 @@ impl<W: io::Write> CursorWriter<W> {
     }
 
     /// Write a u16LE.
-    pub fn write_u16(&mut self, n: u16) -> io::Result<()> {
+    pub fn write_u16(
+        &mut self,
+        n: u16,
+    ) -> io::Result<()> {
         WriteBytesExt::write_u16::<LE>(self, n)?;
         Ok(())
     }
 
     /// Write a u32LE.
-    pub fn write_u32(&mut self, n: u32) -> io::Result<()> {
+    pub fn write_u32(
+        &mut self,
+        n: u32,
+    ) -> io::Result<()> {
         WriteBytesExt::write_u32::<LE>(self, n)?;
         Ok(())
     }
 
     /// Write a u64LE.
-    pub fn write_u64(&mut self, n: u64) -> io::Result<()> {
+    pub fn write_u64(
+        &mut self,
+        n: u64,
+    ) -> io::Result<()> {
         WriteBytesExt::write_u64::<LE>(self, n)?;
         Ok(())
     }
 }
 
 impl<W: io::Write> io::Write for CursorWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    fn write(
+        &mut self,
+        buf: &[u8],
+    ) -> io::Result<usize> {
         let n = self.wtr.write(buf)?;
         self.pos += n;
         Ok(n)

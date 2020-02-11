@@ -1,8 +1,9 @@
-use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
-use std::thread;
-use std::time::Instant;
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+    thread,
+    time::Instant,
+};
 
 use csv;
 use failure::ResultExt;
@@ -10,15 +11,17 @@ use memmap::Mmap;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use crate::error::{Error, ErrorKind, Result};
-use crate::record::{Episode, Rating, Title, TitleKind};
-use crate::scored::SearchResults;
-use crate::util::{
-    IMDB_BASICS, NiceDuration, create_file, csv_file, csv_mmap, open_file,
+use crate::{
+    error::{Error, ErrorKind, Result},
+    record::{Episode, Rating, Title, TitleKind},
+    scored::SearchResults,
+    util::{create_file, csv_file, csv_mmap, open_file, NiceDuration, IMDB_BASICS},
 };
 
-pub use self::aka::AKARecordIter;
-pub use self::names::{NameQuery, NameScorer, NgramType};
+pub use self::{
+    aka::AKARecordIter,
+    names::{NameQuery, NameScorer, NgramType},
+};
 
 mod aka;
 mod episode;
@@ -89,19 +92,11 @@ impl MediaEntity {
 ///
 /// With this index, one can do the following things:
 ///
-/// * Return a ranked list
-///   [`Title`](struct.Title.html)
-///   records matching a fuzzy name query.
+/// * Return a ranked list [`Title`](struct.Title.html) records matching a fuzzy name query.
 /// * Access any `Title` record by ID in constant time.
-/// * Access all
-///   [`AKA`](struct.AKA.html)
-///   records for any `Title` in constant time.
-/// * Access the
-///   [`Rating`](struct.Rating.html)
-///   for any `Title` in constant time.
-/// * Access the complete set of
-///   [`Episode`](struct.Episode.html)
-///   records for any TV show in constant time.
+/// * Access all [`AKA`](struct.AKA.html) records for any `Title` in constant time.
+/// * Access the [`Rating`](struct.Rating.html) for any `Title` in constant time.
+/// * Access the complete set of [`Episode`](struct.Episode.html) records for any TV show in constant time.
 /// * Access the specific `Episode` given its ID in constant time.
 #[derive(Debug)]
 pub struct Index {
@@ -222,7 +217,10 @@ impl Index {
     /// This returns an error if there was a problem reading the underlying
     /// index. If no such title exists for the given ID, then `None` is
     /// returned.
-    pub fn entity(&mut self, id: &str) -> Result<Option<MediaEntity>> {
+    pub fn entity(
+        &mut self,
+        id: &str,
+    ) -> Result<Option<MediaEntity>> {
         match self.title(id)? {
             None => Ok(None),
             Some(title) => self.entity_from_title(title).map(Some),
@@ -233,13 +231,20 @@ impl Index {
     ///
     /// This is like the `entity` method, except it takes a `Title` record as
     /// given.
-    pub fn entity_from_title(&mut self, title: Title) -> Result<MediaEntity> {
+    pub fn entity_from_title(
+        &mut self,
+        title: Title,
+    ) -> Result<MediaEntity> {
         let episode = match title.kind {
             TitleKind::TVEpisode => self.episode(&title.id)?,
             _ => None,
         };
         let rating = self.rating(&title.id)?;
-        Ok(MediaEntity { title, episode, rating })
+        Ok(MediaEntity {
+            title,
+            episode,
+            rating,
+        })
     }
 
     /// Returns the `Title` record for the given IMDb ID.
@@ -247,7 +252,10 @@ impl Index {
     /// This returns an error if there was a problem reading the underlying
     /// index. If no such title exists for the given ID, then `None` is
     /// returned.
-    pub fn title(&mut self, id: &str) -> Result<Option<Title>> {
+    pub fn title(
+        &mut self,
+        id: &str,
+    ) -> Result<Option<Title>> {
         match self.idx_title.get(id.as_bytes()) {
             None => Ok(None),
             Some(offset) => self.read_record(offset),
@@ -260,7 +268,10 @@ impl Index {
     /// returned.
     ///
     /// If there was a problem reading the index, then an error is returned.
-    pub fn aka_records(&mut self, id: &str) -> Result<AKARecordIter> {
+    pub fn aka_records(
+        &mut self,
+        id: &str,
+    ) -> Result<AKARecordIter> {
         self.idx_aka.find(id.as_bytes())
     }
 
@@ -269,7 +280,10 @@ impl Index {
     /// If no rating exists for the given ID, then this returns `None`.
     ///
     /// If there was a problem reading the index, then an error is returned.
-    pub fn rating(&mut self, id: &str) -> Result<Option<Rating>> {
+    pub fn rating(
+        &mut self,
+        id: &str,
+    ) -> Result<Option<Rating>> {
         self.idx_rating.rating(id.as_bytes())
     }
 
@@ -284,7 +298,10 @@ impl Index {
     /// episodes with a season or episode number.
     ///
     /// If there was a problem reading the index, then an error is returned.
-    pub fn seasons(&mut self, tvshow_id: &str) -> Result<Vec<Episode>> {
+    pub fn seasons(
+        &mut self,
+        tvshow_id: &str,
+    ) -> Result<Vec<Episode>> {
         self.idx_episode.seasons(tvshow_id.as_bytes())
     }
 
@@ -313,7 +330,10 @@ impl Index {
     /// If the ID doesn't correspond to an episode, then `None` is returned.
     ///
     /// If there was a problem reading the index, then an error is returned.
-    pub fn episode(&mut self, episode_id: &str) -> Result<Option<Episode>> {
+    pub fn episode(
+        &mut self,
+        episode_id: &str,
+    ) -> Result<Option<Episode>> {
         self.idx_episode.episode(episode_id.as_bytes())
     }
 
@@ -348,8 +368,7 @@ impl Index {
         if !self.csv_basic.read_record(&mut record).map_err(Error::csv)? {
             Ok(None)
         } else {
-            let headers = self.csv_basic.headers().map_err(Error::csv)?;
-            Ok(record.deserialize(Some(headers)).map_err(Error::csv)?)
+            Ok(record.deserialize(Some(self.csv_basic.headers().map_err(Error::csv)?)).map_err(Error::csv)?)
         }
     }
 }
@@ -394,8 +413,7 @@ impl IndexBuilder {
         log::debug!("opening index {}", index_dir.display());
 
         let config_file = open_file(index_dir.join(CONFIG))?;
-        let config: Config = serde_json::from_reader(config_file)
-            .map_err(|e| Error::config(e.to_string()))?;
+        let config: Config = serde_json::from_reader(config_file).map_err(|e| Error::config(e.to_string()))?;
         if config.version != VERSION {
             return Err(Error::version(VERSION, config.version));
         }
@@ -434,8 +452,7 @@ impl IndexBuilder {
     ) -> Result<Index> {
         let data_dir = data_dir.as_ref();
         let index_dir = index_dir.as_ref();
-        fs::create_dir_all(index_dir)
-            .with_context(|_| ErrorKind::path(index_dir))?;
+        fs::create_dir_all(index_dir).with_context(|_| ErrorKind::path(index_dir))?;
         log::info!("creating index at {}", index_dir.display());
 
         // Creating the rating and episode indices are completely independent
@@ -447,13 +464,11 @@ impl IndexBuilder {
             thread::spawn(move || -> Result<()> {
                 let start = Instant::now();
                 rating::Index::create(&data_dir, &index_dir)?;
-                log::info!("created rating index (took {})",
-                      NiceDuration::since(start));
+                log::info!("created rating index (took {})", NiceDuration::since(start));
 
                 let start = Instant::now();
                 episode::Index::create(&data_dir, &index_dir)?;
-                log::info!("created episode index (took {})",
-                      NiceDuration::since(start));
+                log::info!("created episode index (took {})", NiceDuration::since(start));
                 Ok(())
             })
         };
@@ -463,23 +478,25 @@ impl IndexBuilder {
         log::info!("created AKA index (took {})", NiceDuration::since(start));
 
         let start = Instant::now();
-        create_name_index(
-            &mut aka_index,
-            data_dir,
-            index_dir,
+        create_name_index(&mut aka_index, data_dir, index_dir, self.ngram_type, self.ngram_size)?;
+        log::info!(
+            "created name index, ngram type: {}, ngram size: {} (took {})",
             self.ngram_type,
             self.ngram_size,
-        )?;
-        log::info!("created name index, ngram type: {}, ngram size: {} (took {})",
-              self.ngram_type, self.ngram_size, NiceDuration::since(start));
+            NiceDuration::since(start)
+        );
 
         job.join().unwrap()?;
 
         // Write out our config.
         let config_file = create_file(index_dir.join(CONFIG))?;
-        serde_json::to_writer_pretty(config_file, &Config {
-            version: VERSION,
-        }).map_err(|e| Error::config(e.to_string()))?;
+        serde_json::to_writer_pretty(
+            config_file,
+            &Config {
+                version: VERSION,
+            },
+        )
+        .map_err(|e| Error::config(e.to_string()))?;
 
         self.open(data_dir, index_dir)
     }
@@ -487,7 +504,10 @@ impl IndexBuilder {
     /// Set the type of ngram generation to use.
     ///
     /// The default type is `Window`.
-    pub fn ngram_type(&mut self, ngram_type: NgramType) -> &mut IndexBuilder {
+    pub fn ngram_type(
+        &mut self,
+        ngram_type: NgramType,
+    ) -> &mut IndexBuilder {
         self.ngram_type = ngram_type;
         self
     }
@@ -495,7 +515,10 @@ impl IndexBuilder {
     /// Set the ngram size on this index.
     ///
     /// When creating an index, ngrams with this size will be used.
-    pub fn ngram_size(&mut self, ngram_size: usize) -> &mut IndexBuilder {
+    pub fn ngram_size(
+        &mut self,
+        ngram_size: usize,
+    ) -> &mut IndexBuilder {
         self.ngram_size = ngram_size;
         self
     }

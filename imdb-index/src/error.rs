@@ -1,6 +1,8 @@
-use std::fmt;
-use std::path::{Path, PathBuf};
-use std::result;
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+    result,
+};
 
 use csv;
 use failure::{Backtrace, Context, Fail};
@@ -49,8 +51,14 @@ impl Error {
         Error::from(ErrorKind::Config(msg.as_ref().to_string()))
     }
 
-    pub(crate) fn version(expected: u64, got: u64) -> Error {
-        Error::from(ErrorKind::VersionMismatch { expected, got })
+    pub(crate) fn version(
+        expected: u64,
+        got: u64,
+    ) -> Error {
+        Error::from(ErrorKind::VersionMismatch {
+            expected,
+            got,
+        })
     }
 
     pub(crate) fn csv(err: csv::Error) -> Error {
@@ -77,7 +85,10 @@ impl Fail for Error {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         self.ctx.fmt(f)
     }
 }
@@ -144,59 +155,40 @@ pub enum ErrorKind {
 
 impl ErrorKind {
     /// A convenience routine for creating an error associated with a path.
-    pub(crate) fn path<P: AsRef<Path>>(
-        path: P,
-    ) -> ErrorKind {
+    pub(crate) fn path<P: AsRef<Path>>(path: P) -> ErrorKind {
         ErrorKind::Path(path.as_ref().to_path_buf())
     }
 }
 
 impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         match *self {
-            ErrorKind::Path(ref path) => {
-                write!(f, "{}", path.display())
-            }
-            ErrorKind::VersionMismatch { expected, got } => {
-                write!(f, "index version mismatch: expected version {} \
-                           but got version {}. Please rebuild the index.",
-                           expected, got)
-            }
-            ErrorKind::UnknownTitle(ref unk) => {
-                write!(f, "unrecognized title type: '{}'", unk)
-            }
-            ErrorKind::UnknownScorer(ref unk) => {
-                write!(f, "unrecognized scorer name: '{}'", unk)
-            }
-            ErrorKind::UnknownNgramType(ref unk) => {
-                write!(f, "unrecognized ngram type: '{}'", unk)
-            }
-            ErrorKind::UnknownSimilarity(ref unk) => {
-                write!(f, "unrecognized similarity function: '{}'", unk)
-            }
-            ErrorKind::UnknownDirective(ref unk) => {
-                write!(f, "unrecognized search directive: '{}'", unk)
-            }
+            ErrorKind::Path(ref path) => write!(f, "{}", path.display()),
+            ErrorKind::VersionMismatch {
+                expected,
+                got,
+            } => write!(
+                f,
+                "index version mismatch: expected version {} but got version {}. Please rebuild the index.",
+                expected, got
+            ),
+            ErrorKind::UnknownTitle(ref unk) => write!(f, "unrecognized title type: '{}'", unk),
+            ErrorKind::UnknownScorer(ref unk) => write!(f, "unrecognized scorer name: '{}'", unk),
+            ErrorKind::UnknownNgramType(ref unk) => write!(f, "unrecognized ngram type: '{}'", unk),
+            ErrorKind::UnknownSimilarity(ref unk) => write!(f, "unrecognized similarity function: '{}'", unk),
+            ErrorKind::UnknownDirective(ref unk) => write!(f, "unrecognized search directive: '{}'", unk),
             ErrorKind::Bug(ref msg) => {
-                let report = "Please report this bug with a backtrace at \
-                              https://github.com/BurntSushi/imdb-rename";
+                let report = "Please report this bug with a backtrace at https://github.com/BurntSushi/imdb-rename";
                 write!(f, "BUG: {}\n{}", msg, report)
             }
-            ErrorKind::Config(ref msg) => {
-                write!(f, "config error: {}", msg)
-            }
-            ErrorKind::Csv(ref msg) => {
-                write!(f, "{}", msg)
-            }
-            ErrorKind::Fst(ref msg) => {
-                write!(f, "fst error: {}", msg)
-            }
-            ErrorKind::Io => {
-                write!(f, "I/O error")
-            }
-            ErrorKind::Number => {
-                write!(f, "error parsing number")
-            }
+            ErrorKind::Config(ref msg) => write!(f, "config error: {}", msg),
+            ErrorKind::Csv(ref msg) => write!(f, "{}", msg),
+            ErrorKind::Fst(ref msg) => write!(f, "fst error: {}", msg),
+            ErrorKind::Io => write!(f, "I/O error"),
+            ErrorKind::Number => write!(f, "error parsing number"),
             ErrorKind::__Nonexhaustive => panic!("invalid error"),
         }
     }
@@ -210,6 +202,8 @@ impl From<ErrorKind> for Error {
 
 impl From<Context<ErrorKind>> for Error {
     fn from(ctx: Context<ErrorKind>) -> Error {
-        Error { ctx }
+        Error {
+            ctx,
+        }
     }
 }

@@ -1,15 +1,16 @@
-use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use failure::{bail, format_err};
 use imdb_index::{MediaEntity, Query, SearchResults, Searcher, TitleKind};
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::util::choose;
-use crate::Result;
+use crate::{util::choose, Result};
 
 /// A proposal to rename a `src` file path to a `dst` file path.
 #[derive(Clone, Debug)]
@@ -22,11 +23,13 @@ impl RenameProposal {
     /// Create a new proposal with the given source and destination. The
     /// destination is constructed by joining `dst_parent` with `dst_name`.
     /// `dst_name` is sanitized to be safe as a file name.
-    fn new(src: &Path, dst_parent: &Path, dst_name: &str) -> RenameProposal {
+    fn new(
+        src: &Path,
+        dst_parent: &Path,
+        dst_name: &str,
+    ) -> RenameProposal {
         lazy_static! {
-            static ref RE_BAD_PATH_CHARS: Regex = Regex::new(
-                r"[\x00/]",
-            ).unwrap();
+            static ref RE_BAD_PATH_CHARS: Regex = Regex::new(r"[\x00/]",).unwrap();
         }
         let name = RE_BAD_PATH_CHARS.replace_all(dst_name, "_");
         RenameProposal {
@@ -37,12 +40,8 @@ impl RenameProposal {
 
     /// Execute this proposal and rename the `src` to the `dst`.
     pub fn rename(&self) -> Result<()> {
-        fs::rename(&self.src, &self.dst).map_err(|e| {
-            format_err!(
-                "error renaming '{}' to '{}': {}",
-                self.src.display(), self.dst.display(), e,
-            )
-        })?;
+        fs::rename(&self.src, &self.dst)
+            .map_err(|e| format_err!("error renaming '{}' to '{}': {}", self.src.display(), self.dst.display(), e,))?;
         Ok(())
     }
 
@@ -170,19 +169,11 @@ impl Renamer {
         let ent = match result {
             Ok(ent) => ent,
             Err(err) => {
-                eprintln!(
-                    "[skipping] error searching for {}: {}",
-                    path.display(),
-                    err,
-                );
+                eprintln!("[skipping] error searching for {}: {}", path.display(), err,);
                 return None;
             }
         };
-        Some(RenameProposal::new(
-            path,
-            &candidate.path.parent,
-            &candidate.path.imdb_name(&ent),
-        ))
+        Some(RenameProposal::new(path, &candidate.path.parent, &candidate.path.imdb_name(&ent)))
     }
 
     /// Search for any entity via its name and a year. In general, this is
@@ -203,8 +194,10 @@ impl Renamer {
 
         // Otherwise, try to figure out the "right" name by constructing a
         // query from the candidate and searching IMDb.
-        let query = self.name_query(&candidate.title)
-            .year_ge(candidate.year).year_le(candidate.year)
+        let query = self
+            .name_query(&candidate.title)
+            .year_ge(candidate.year)
+            .year_le(candidate.year)
             // Basically include every kind except for episode and video games.
             // This helps filter out a lot of noise.
             .kind(TitleKind::Movie)
@@ -233,20 +226,10 @@ impl Renamer {
         candidate: &CandidateEpisode,
     ) -> Result<MediaEntity> {
         let tvshow = self.find_tvshow_for_episode(searcher, candidate)?;
-        let eps = searcher.index().episodes(
-            &tvshow.title().id,
-            candidate.season,
-        )?;
-        let ep = match eps.into_iter().find(|ep| {
-            ep.episode == Some(candidate.episode)
-        }) {
+        let eps = searcher.index().episodes(&tvshow.title().id, candidate.season)?;
+        let ep = match eps.into_iter().find(|ep| ep.episode == Some(candidate.episode)) {
             Some(ep) => ep,
-            None => bail!(
-                "could not find S{:02}E{:02} for TV show {}",
-                candidate.season,
-                candidate.episode,
-                tvshow.title().id,
-            ),
+            None => bail!("could not find S{:02}E{:02} for TV show {}", candidate.season, candidate.episode, tvshow.title().id,),
         };
         match searcher.index().entity(&ep.id)? {
             Some(ent) => Ok(ent),
@@ -269,15 +252,15 @@ impl Renamer {
         // TV show. If it isn't a TV show, then return an error.
         if let Some(ref ent) = self.force {
             if !ent.title().kind.is_tv_series() {
-                bail!("expected TV show to rename episode, but found {}",
-                      ent.title().kind);
+                bail!("expected TV show to rename episode, but found {}", ent.title().kind);
             }
             return Ok(ent.clone());
         }
 
         // Otherwise, try to figure out the "right" TV show by constructing a
         // query from the candidate and searching IMDb.
-        let query = self.name_query(&candidate.tvshow_title)
+        let query = self
+            .name_query(&candidate.tvshow_title)
             .kind(TitleKind::TVMiniSeries)
             .kind(TitleKind::TVSeries)
             .votes_ge(self.min_votes);
@@ -299,8 +282,7 @@ impl Renamer {
         match self.force {
             Some(ref ent) => Ok(ent.clone()),
             None => {
-                bail!("could not parse file path and there is no override \
-                       set via -q/--query");
+                bail!("could not parse file path and there is no override set via -q/--query");
             }
         }
     }
@@ -312,7 +294,10 @@ impl Renamer {
     /// represents. Principally, this consists of three categories: TV episode,
     /// any named title with a year, and then everything else. The type of
     /// candidate we have determines how we guess its canonical entry in IMDb.
-    fn candidate(&self, path: &Path) -> Result<Candidate> {
+    fn candidate(
+        &self,
+        path: &Path,
+    ) -> Result<Candidate> {
         let cpath = CandidatePath::from_path(path)?;
         let name = cpath.base_name.clone();
 
@@ -324,10 +309,12 @@ impl Renamer {
         }
 
         let caps_year = match self.year.captures(&name) {
-            None => return Ok(Candidate {
-                path: cpath,
-                kind: CandidateKind::Unknown,
-            }),
+            None => {
+                return Ok(Candidate {
+                    path: cpath,
+                    kind: CandidateKind::Unknown,
+                })
+            }
             Some(caps) => caps,
         };
         let mat_year = match caps_year.name("year") {
@@ -338,7 +325,10 @@ impl Renamer {
         let title = name[..mat_year.start()].to_string();
         Ok(Candidate {
             path: cpath,
-            kind: CandidateKind::Any(CandidateAny { title, year }),
+            kind: CandidateKind::Any(CandidateAny {
+                title,
+                year,
+            }),
         })
     }
 
@@ -379,7 +369,10 @@ impl Renamer {
 
     /// Build a query and seed it with the given name, after sanitizing the
     /// name.
-    fn name_query(&self, name: &str) -> Query {
+    fn name_query(
+        &self,
+        name: &str,
+    ) -> Query {
         let name = name.replace(".", " ");
         let name = name.trim();
         log::debug!("automatic name query: {:?}", name);
@@ -522,17 +515,14 @@ impl CandidatePath {
             None => bail!("{}: invalid UTF-8, cannot rename", path.display()),
             Some(name) => name,
         };
-        let (base_name, ext) =
-            if path.is_dir() {
-                (name.to_string(), None)
-            } else {
-                match name.rfind('.') {
-                    None => (name.to_string(), None),
-                    Some(i) => {
-                        (name[..i].to_string(), Some(name[i+1..].to_string()))
-                    }
-                }
-            };
+        let (base_name, ext) = if path.is_dir() {
+            (name.to_string(), None)
+        } else {
+            match name.rfind('.') {
+                None => (name.to_string(), None),
+                Some(i) => (name[..i].to_string(), Some(name[i + 1..].to_string())),
+            }
+        };
         Ok(CandidatePath {
             parent,
             base_name,
@@ -543,22 +533,16 @@ impl CandidatePath {
     /// Convert this candidate path to the desired name based on an IMDb
     /// entity. In general, this replaces the `base_name` of this candidate
     /// with the title found in the given entity.
-    fn imdb_name(&self, ent: &MediaEntity) -> String {
+    fn imdb_name(
+        &self,
+        ent: &MediaEntity,
+    ) -> String {
         let name = match ent.episode() {
-            Some(ep) => {
-                format!(
-                    "S{:02}E{:02} - {}",
-                    ep.season.unwrap_or(0),
-                    ep.episode.unwrap_or(0),
-                    ent.title().title,
-                )
-            }
-            None => {
-                match ent.title().start_year {
-                    None => ent.title().title.to_string(),
-                    Some(year) => format!("{} ({})", ent.title().title, year),
-                }
-            }
+            Some(ep) => format!("S{:02}E{:02} - {}", ep.season.unwrap_or(0), ep.episode.unwrap_or(0), ent.title().title,),
+            None => match ent.title().start_year {
+                None => ent.title().title.to_string(),
+                Some(year) => format!("{} ({})", ent.title().title, year),
+            },
         };
         match self.ext {
             None => name,
@@ -614,7 +598,10 @@ impl RenamerBuilder {
     /// If a path to be renamed is determined to be a TV episode, then this
     /// entity is assumed to be the entity corresponding to that episode's
     /// TV show. Otherwise, an error will be returned.
-    pub fn force(&mut self, entity: MediaEntity) -> &mut RenamerBuilder {
+    pub fn force(
+        &mut self,
+        entity: MediaEntity,
+    ) -> &mut RenamerBuilder {
         self.force = Some(entity);
         self
     }
@@ -625,7 +612,10 @@ impl RenamerBuilder {
     /// filter out noise from the IMDb data.
     ///
     /// When this isn't specified, a non-zero default is used.
-    pub fn min_votes(&mut self, min_votes: u32) -> &mut RenamerBuilder {
+    pub fn min_votes(
+        &mut self,
+        min_votes: u32,
+    ) -> &mut RenamerBuilder {
         self.min_votes = min_votes;
         self
     }
@@ -638,7 +628,10 @@ impl RenamerBuilder {
     /// to this threshold, then the first result will be automatically chosen.
     /// Otherwise, a prompt will be shown to the end user requesting an
     /// explicit selection.
-    pub fn good_threshold(&mut self, threshold: f64) -> &mut RenamerBuilder {
+    pub fn good_threshold(
+        &mut self,
+        threshold: f64,
+    ) -> &mut RenamerBuilder {
         self.good_threshold = threshold;
         self
     }
@@ -647,7 +640,10 @@ impl RenamerBuilder {
     ///
     /// Regexes are executed against the base name of a path. The episode
     /// number is extracted via the `episode` named capture group.
-    pub fn regex_episode(&mut self, pattern: &str) -> &mut RenamerBuilder {
+    pub fn regex_episode(
+        &mut self,
+        pattern: &str,
+    ) -> &mut RenamerBuilder {
         self.regex_episode = pattern.to_string();
         self
     }
@@ -656,7 +652,10 @@ impl RenamerBuilder {
     ///
     /// Regexes are executed against the base name of a path. The season
     /// number is extracted via the `season` named capture group.
-    pub fn regex_season(&mut self, pattern: &str) -> &mut RenamerBuilder {
+    pub fn regex_season(
+        &mut self,
+        pattern: &str,
+    ) -> &mut RenamerBuilder {
         self.regex_season = pattern.to_string();
         self
     }
@@ -665,7 +664,10 @@ impl RenamerBuilder {
     ///
     /// Regexes are executed against the base name of a path. The year is
     /// extracted via the `year` named capture group.
-    pub fn regex_year(&mut self, pattern: &str) -> &mut RenamerBuilder {
+    pub fn regex_year(
+        &mut self,
+        pattern: &str,
+    ) -> &mut RenamerBuilder {
         self.regex_year = pattern.to_string();
         self
     }

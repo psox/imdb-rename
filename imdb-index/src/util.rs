@@ -1,8 +1,4 @@
-use std::fmt;
-use std::fs::File;
-use std::io;
-use std::path::Path;
-use std::time;
+use std::{fmt, fs::File, io, path::Path, time};
 
 use csv;
 use failure::ResultExt;
@@ -42,7 +38,10 @@ pub const IMDB_RATINGS: &str = "title.ratings.tsv";
 pub struct NiceDuration(pub time::Duration);
 
 impl fmt::Display for NiceDuration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         write!(f, "{:0.4} secs", self.fractional_seconds())
     }
 }
@@ -77,9 +76,7 @@ pub fn csv_reader_builder() -> csv::ReaderBuilder {
 /// We use memory maps for this even though we could use a normal `File`, which
 /// is also seekable, because seeking a memory map has very little overhead.
 /// Seeking a `File`, on the other hand, requires a syscall.
-pub unsafe fn csv_mmap<P: AsRef<Path>>(
-    path: P,
-) -> Result<csv::Reader<io::Cursor<Mmap>>> {
+pub unsafe fn csv_mmap<P: AsRef<Path>>(path: P) -> Result<csv::Reader<io::Cursor<Mmap>>> {
     let mmap = mmap_file(path)?;
     Ok(csv_reader_builder().from_reader(io::Cursor::new(mmap)))
 }
@@ -88,13 +85,9 @@ pub unsafe fn csv_mmap<P: AsRef<Path>>(
 /// While this read can be seeked, it will be less efficient than using a
 /// memory map. Therefore, this is useful for reading CSV data when no seeking
 /// is needed.
-pub fn csv_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<csv::Reader<File>> {
+pub fn csv_file<P: AsRef<Path>>(path: P) -> Result<csv::Reader<File>> {
     let path = path.as_ref();
-    let rdr = csv_reader_builder()
-        .from_path(path)
-        .with_context(|_| ErrorKind::path(path))?;
+    let rdr = csv_reader_builder().from_path(path).with_context(|_| ErrorKind::path(path))?;
     Ok(rdr)
 }
 
@@ -121,41 +114,31 @@ pub fn open_file<P: AsRef<Path>>(path: P) -> Result<File> {
 }
 
 /// Creates an FST set builder for the given file path.
-pub fn fst_set_builder_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<fst::SetBuilder<io::BufWriter<File>>> {
+pub fn fst_set_builder_file<P: AsRef<Path>>(path: P) -> Result<fst::SetBuilder<io::BufWriter<File>>> {
     let path = path.as_ref();
     let wtr = io::BufWriter::new(create_file(path)?);
-    let builder = fst::SetBuilder::new(wtr)
-        .map_err(Error::fst)
-        .with_context(|_| ErrorKind::path(path))?;
+    let builder = fst::SetBuilder::new(wtr).map_err(Error::fst).with_context(|_| ErrorKind::path(path))?;
     Ok(builder)
 }
 
 /// Open an FST set file for the given file path as a memory map.
 pub unsafe fn fst_set_file<P: AsRef<Path>>(path: P) -> Result<fst::Set> {
     let path = path.as_ref();
-    let set = fst::Set::from_path(path)
-        .with_context(|_| ErrorKind::path(path))?;
+    let set = fst::Set::from_path(path).with_context(|_| ErrorKind::path(path))?;
     Ok(set)
 }
 
 /// Creates an FST map builder for the given file path.
-pub fn fst_map_builder_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<fst::MapBuilder<io::BufWriter<File>>> {
+pub fn fst_map_builder_file<P: AsRef<Path>>(path: P) -> Result<fst::MapBuilder<io::BufWriter<File>>> {
     let path = path.as_ref();
     let wtr = io::BufWriter::new(create_file(path)?);
-    let builder = fst::MapBuilder::new(wtr)
-        .map_err(Error::fst)
-        .with_context(|_| ErrorKind::path(path))?;
+    let builder = fst::MapBuilder::new(wtr).map_err(Error::fst).with_context(|_| ErrorKind::path(path))?;
     Ok(builder)
 }
 
 /// Open an FST map file for the given file path as a memory map.
 pub unsafe fn fst_map_file<P: AsRef<Path>>(path: P) -> Result<fst::Map> {
     let path = path.as_ref();
-    let set = fst::Map::from_path(path)
-        .with_context(|_| ErrorKind::path(path))?;
+    let set = fst::Map::from_path(path).with_context(|_| ErrorKind::path(path))?;
     Ok(set)
 }

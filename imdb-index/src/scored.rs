@@ -1,7 +1,4 @@
-use std::cmp;
-use std::collections::BinaryHeap;
-use std::num::FpCategory;
-use std::vec;
+use std::{cmp, collections::BinaryHeap, num::FpCategory, vec};
 
 /// A collection of scored values, sorted in descending order by score.
 #[derive(Clone, Debug, Default)]
@@ -14,9 +11,7 @@ impl<T> SearchResults<T> {
     }
 
     /// Create a collection of search results from a min-heap of scored values.
-    pub fn from_min_heap(
-        queue: &mut BinaryHeap<cmp::Reverse<Scored<T>>>,
-    ) -> SearchResults<T> {
+    pub fn from_min_heap(queue: &mut BinaryHeap<cmp::Reverse<Scored<T>>>) -> SearchResults<T> {
         let mut results = vec![];
         while let Some(x) = queue.pop() {
             results.push(x.0);
@@ -29,7 +24,10 @@ impl<T> SearchResults<T> {
     ///
     /// The score provided must be less than or equal to every other score in
     /// this collection, otherwise this method will panic.
-    pub fn push(&mut self, scored: Scored<T>) {
+    pub fn push(
+        &mut self,
+        scored: Scored<T>,
+    ) {
         assert!(self.0.last().map_or(true, |smallest| &scored <= smallest));
         self.0.push(scored);
     }
@@ -57,7 +55,10 @@ impl<T> SearchResults<T> {
     /// Recomputes the scores in this collection using the given function.
     ///
     /// The results are then re-sorted according to the new scores.
-    pub fn rescore<F: FnMut(&T) -> f64>(&mut self, mut rescore: F) {
+    pub fn rescore<F: FnMut(&T) -> f64>(
+        &mut self,
+        mut rescore: F,
+    ) {
         for result in &mut self.0 {
             let score = rescore(result.value());
             result.set_score(score);
@@ -67,7 +68,10 @@ impl<T> SearchResults<T> {
 
     /// Trim this collection so that it contains at most the first `size`
     /// results.
-    pub fn trim(&mut self, size: usize) {
+    pub fn trim(
+        &mut self,
+        size: usize,
+    ) {
         if self.0.len() > size {
             self.0.drain(size..);
         }
@@ -118,7 +122,10 @@ pub struct Scored<T> {
 impl<T> Scored<T> {
     /// Create a new value `T` with a score of `1.0`.
     pub fn new(value: T) -> Scored<T> {
-        Scored { score: 1.0, value }
+        Scored {
+            score: 1.0,
+            value,
+        }
     }
 
     /// Return the score for this item.
@@ -134,7 +141,10 @@ impl<T> Scored<T> {
     /// Set the score, replacing the existing value with the given value.
     ///
     /// This panics if the given score is `NaN`.
-    pub fn set_score(&mut self, score: f64) {
+    pub fn set_score(
+        &mut self,
+        score: f64,
+    ) {
         assert!(score.is_finite());
         self.score = score;
     }
@@ -143,7 +153,10 @@ impl<T> Scored<T> {
     /// existing score and replaces it with the given score.
     ///
     /// This panics if the given score is `NaN`.
-    pub fn with_score(mut self, score: f64) -> Scored<T> {
+    pub fn with_score(
+        mut self,
+        score: f64,
+    ) -> Scored<T> {
         self.set_score(score);
         self
     }
@@ -151,15 +164,24 @@ impl<T> Scored<T> {
     /// Consume this scored value and map its value using the function given,
     /// returning a new scored value with the result of the map and an
     /// unchanged score.
-    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Scored<U> {
-        Scored { score: self.score, value: f(self.value) }
+    pub fn map<U, F: FnOnce(T) -> U>(
+        self,
+        f: F,
+    ) -> Scored<U> {
+        Scored {
+            score: self.score,
+            value: f(self.value),
+        }
     }
 
     /// Consume this scored value and map its score using the function given,
     /// return a new `Scored` with an unchanged value.
     ///
     /// This panics if score returned by `f` is `NaN`.
-    pub fn map_score<F: FnOnce(f64) -> f64>(self, f: F) -> Scored<T> {
+    pub fn map_score<F: FnOnce(f64) -> f64>(
+        self,
+        f: F,
+    ) -> Scored<T> {
         let score = f(self.score);
         self.with_score(score)
     }
@@ -191,28 +213,37 @@ impl<T: Default> Default for Scored<T> {
 impl<T> Eq for Scored<T> {}
 
 impl<T> PartialEq for Scored<T> {
-    fn eq(&self, other: &Scored<T>) -> bool {
+    fn eq(
+        &self,
+        other: &Scored<T>,
+    ) -> bool {
         let (s1, s2) = (self.score, other.score);
         s1 == s2
     }
 }
 
 impl<T> Ord for Scored<T> {
-    fn cmp(&self, other: &Scored<T>) -> cmp::Ordering {
+    fn cmp(
+        &self,
+        other: &Scored<T>,
+    ) -> cmp::Ordering {
         self.score.partial_cmp(&other.score).unwrap()
     }
 }
 
 impl<T> PartialOrd for Scored<T> {
-    fn partial_cmp(&self, other: &Scored<T>) -> Option<cmp::Ordering> {
+    fn partial_cmp(
+        &self,
+        other: &Scored<T>,
+    ) -> Option<cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::f64::NAN;
     use super::Scored;
+    use std::f64::NAN;
 
     #[test]
     #[should_panic]

@@ -1,19 +1,16 @@
-/*!
-This crate provides an on-disk indexing data structure for searching IMDb.
-Searching is primarily done using information retrieval techniques, which
-support fuzzy name queries and using TF-IDF-like ranking functions.
-*/
+//! This crate provides an on-disk indexing data structure for searching IMDb.
+//! Searching is primarily done using information retrieval techniques, which
+//! support fuzzy name queries and using TF-IDF-like ranking functions.
 
 #![deny(missing_docs)]
 
-pub use crate::error::{Error, ErrorKind, Result};
-pub use crate::index::{
-    AKARecordIter, Index, IndexBuilder, MediaEntity,
-    NameQuery, NameScorer, NgramType,
+pub use crate::{
+    error::{Error, ErrorKind, Result},
+    index::{AKARecordIter, Index, IndexBuilder, MediaEntity, NameQuery, NameScorer, NgramType},
+    record::{Episode, Rating, Title, TitleKind, AKA},
+    scored::{Scored, SearchResults},
+    search::{Query, Searcher, Similarity},
 };
-pub use crate::record::{AKA, Episode, Rating, Title, TitleKind};
-pub use crate::scored::{SearchResults, Scored};
-pub use crate::search::{Query, Searcher, Similarity};
 
 // A macro that creates an error that represents a bug.
 //

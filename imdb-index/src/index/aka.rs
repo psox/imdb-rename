@@ -1,14 +1,14 @@
-use std::io;
-use std::iter;
-use std::path::Path;
+use std::{io, iter, path::Path};
 
 use csv;
 use memmap::Mmap;
 
-use crate::error::{Error, Result};
-use crate::index::{csv_file, csv_mmap, id};
-use crate::record::AKA;
-use crate::util::IMDB_AKAS;
+use crate::{
+    error::{Error, Result},
+    index::{csv_file, csv_mmap, id},
+    record::AKA,
+    util::IMDB_AKAS,
+};
 
 /// A name of the AKA record index file.
 ///
@@ -33,7 +33,10 @@ impl Index {
     /// Open an AKA index using the corresponding data and index directories.
     /// The data directory contains the IMDb data set while the index directory
     /// contains the index data files.
-    pub fn open<P1: AsRef<Path>, P2: AsRef<Path>>(data_dir: P1, index_dir: P2) -> Result<Index> {
+    pub fn open<P1: AsRef<Path>, P2: AsRef<Path>>(
+        data_dir: P1,
+        index_dir: P2,
+    ) -> Result<Index> {
         Ok(Index {
             // We claim it is safe to open the following memory map because we
             // don't mutate them and no other process (should) either.
@@ -44,7 +47,10 @@ impl Index {
 
     /// Create an AKA index by reading the AKA data from the given data
     /// directory and writing the index to the corresponding index directory.
-    pub fn create<P1: AsRef<Path>, P2: AsRef<Path>>(data_dir: P1, index_dir: P2) -> Result<Index> {
+    pub fn create<P1: AsRef<Path>, P2: AsRef<Path>>(
+        data_dir: P1,
+        index_dir: P2,
+    ) -> Result<Index> {
         let data_dir = data_dir.as_ref();
         let index_dir = index_dir.as_ref();
 
@@ -64,7 +70,10 @@ impl Index {
 
     /// Return a (possibly empty) iterator over all AKA records for the given
     /// IMDb ID.
-    pub fn find(&mut self, id: &[u8]) -> Result<AKARecordIter> {
+    pub fn find(
+        &mut self,
+        id: &[u8],
+    ) -> Result<AKARecordIter> {
         match self.idx.get(id) {
             None => Ok(AKARecordIter(None)),
             Some(v) => {
@@ -89,9 +98,7 @@ impl Index {
 ///
 /// The lifetime `'r` refers to the lifetime of the underlying AKA index
 /// reader.
-pub struct AKARecordIter<'r>(
-    Option<iter::Take<csv::DeserializeRecordsIter<'r, io::Cursor<Mmap>, AKA>>>,
-);
+pub struct AKARecordIter<'r>(Option<iter::Take<csv::DeserializeRecordsIter<'r, io::Cursor<Mmap>, AKA>>>);
 
 impl<'r> Iterator for AKARecordIter<'r> {
     type Item = Result<AKA>;
@@ -218,8 +225,7 @@ tt0117021	8	Terror im Computer	DE	\N	\N	\N	0
 tt0117022	1	Menopause Song	CA	\N	\N	\N	0
 tt0117023	1	Les menteurs	FR	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> =
-            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
+        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 5);
 
         assert_eq!(records[0].id, b"tt0117019");
@@ -256,8 +262,7 @@ tt0117021	6	La mente de Menno	ES	\N	\N	\N	0
 tt0117021	7	Power.com	CA	en	video	\N	0
 tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> =
-            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
+        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 3);
 
         assert_eq!(records[0].id, b"tt0117019");
@@ -282,8 +287,7 @@ tt0117021	6	La mente de Menno	ES	\N	\N	\N	0
 tt0117021	7	Power.com	CA	en	video	\N	0
 tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> =
-            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
+        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 1);
 
         assert_eq!(records[0].id, b"tt0117021");
@@ -295,8 +299,7 @@ tt0117021	8	Terror im Computer	DE	\N	\N	\N	0";
         let data = r"titleId	ordering	title	region	language	types	attributes	isOriginalTitle
 tt0117021	1	Menno's Mind	US	\N	\N	\N	0";
         let rdr = csv_reader_builder().from_reader(data.as_bytes());
-        let records: Vec<AKAIndexRecord> =
-            AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
+        let records: Vec<AKAIndexRecord> = AKAIndexRecords::new(rdr).collect::<Result<_>>().unwrap();
         assert_eq!(records.len(), 1);
 
         assert_eq!(records[0].id, b"tt0117021");

@@ -1,11 +1,11 @@
-use std::fs::File;
-use std::io;
-use std::path::Path;
+use std::{fs::File, io, path::Path};
 
 use fst;
 
-use crate::error::{Error, Result};
-use crate::util::{fst_map_builder_file, fst_map_file};
+use crate::{
+    error::{Error, Result},
+    util::{fst_map_builder_file, fst_map_file},
+};
 
 /// An index that maps arbitrary length identifiers to 64-bit integers.
 ///
@@ -21,11 +21,16 @@ impl IndexReader {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<IndexReader> {
         // We claim it is safe to open the following memory map because we
         // don't mutate them and no other process (should) either.
-        Ok(IndexReader { idx: unsafe { fst_map_file(path)? } })
+        Ok(IndexReader {
+            idx: unsafe { fst_map_file(path)? },
+        })
     }
 
     /// Return the integer associated with the given ID, if it exists.
-    pub fn get(&self, key: &[u8]) -> Option<u64> {
+    pub fn get(
+        &self,
+        key: &[u8],
+    ) -> Option<u64> {
         self.idx.get(key)
     }
 }
@@ -38,9 +43,7 @@ pub struct IndexSortedWriter<W> {
 
 impl IndexSortedWriter<io::BufWriter<File>> {
     /// Create an index writer that writes the index to the given file path.
-    pub fn from_path<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<IndexSortedWriter<io::BufWriter<File>>> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<IndexSortedWriter<io::BufWriter<File>>> {
         Ok(IndexSortedWriter {
             wtr: fst_map_builder_file(path)?,
         })
@@ -52,7 +55,11 @@ impl<W: io::Write> IndexSortedWriter<W> {
     ///
     /// If the given key is not strictly lexicographically greater than the
     /// previous key, then an error is returned.
-    pub fn insert(&mut self, key: &[u8], value: u64) -> Result<()> {
+    pub fn insert(
+        &mut self,
+        key: &[u8],
+        value: u64,
+    ) -> Result<()> {
         self.wtr.insert(key, value).map_err(Error::fst)?;
         Ok(())
     }

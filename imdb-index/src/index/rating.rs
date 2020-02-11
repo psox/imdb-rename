@@ -3,9 +3,11 @@ use std::path::Path;
 use byteorder::{ByteOrder, BE};
 use fst::{self, IntoStreamer, Streamer};
 
-use crate::error::{Error, Result};
-use crate::record::Rating;
-use crate::util::{IMDB_RATINGS, csv_file, fst_set_builder_file, fst_set_file};
+use crate::{
+    error::{Error, Result},
+    record::Rating,
+    util::{csv_file, fst_set_builder_file, fst_set_file, IMDB_RATINGS},
+};
 
 /// The name of the ratings index file.
 ///
@@ -65,7 +67,10 @@ impl Index {
     /// the number of votes associated with that rating) for the given IMDb
     /// identifier. If no rating information exists for the given ID, then
     /// `None` is returned.
-    pub fn rating(&self, id: &[u8]) -> Result<Option<Rating>> {
+    pub fn rating(
+        &self,
+        id: &[u8],
+    ) -> Result<Option<Rating>> {
         let mut upper = id.to_vec();
         upper.push(0xFF);
 
@@ -91,11 +96,14 @@ fn read_rating(bytes: &[u8]) -> Result<Rating> {
     Ok(Rating {
         id,
         rating: BE::read_f32(&bytes[i..]),
-        votes: BE::read_u32(&bytes[i+4..]),
+        votes: BE::read_u32(&bytes[i + 4..]),
     })
 }
 
-fn write_rating(rat: &Rating, buf: &mut Vec<u8>) -> Result<()> {
+fn write_rating(
+    rat: &Rating,
+    buf: &mut Vec<u8>,
+) -> Result<()> {
     if rat.id.as_bytes().iter().any(|&b| b == 0) {
         bug!("unsupported rating id (with NUL byte) for {:?}", rat);
     }
@@ -121,8 +129,8 @@ fn f32_to_bytes(n: f32) -> [u8; 4] {
 
 #[cfg(test)]
 mod tests {
-    use crate::index::tests::TestContext;
     use super::Index;
+    use crate::index::tests::TestContext;
 
     #[test]
     fn basics() {
@@ -130,7 +138,7 @@ mod tests {
         let idx = Index::create(ctx.data_dir(), ctx.index_dir()).unwrap();
 
         let rat = idx.rating(b"tt0000001").unwrap().unwrap();
-        assert!((rat.rating - 5.8).abs()<1e-10);
+        assert!((rat.rating - 5.8).abs() < 1e-10);
         assert_eq!(rat.votes, 1356);
 
         assert!(idx.rating(b"tt9999999").unwrap().is_none());

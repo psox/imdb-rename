@@ -1,8 +1,4 @@
-use std::cmp;
-use std::f64;
-use std::fmt;
-use std::result;
-use std::str::FromStr;
+use std::{cmp, f64, fmt, result, str::FromStr};
 
 use csv;
 use failure::Fail;
@@ -11,11 +7,13 @@ use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use strsim;
 
-use crate::error::{Error, Result};
-use crate::index::{MediaEntity, Index, NameQuery, NameScorer};
-use crate::record::{Episode, Rating, Title, TitleKind};
-use crate::scored::{Scored, SearchResults};
-use crate::util::{IMDB_BASICS, csv_file};
+use crate::{
+    error::{Error, Result},
+    index::{Index, MediaEntity, NameQuery, NameScorer},
+    record::{Episode, Rating, Title, TitleKind},
+    scored::{Scored, SearchResults},
+    util::{csv_file, IMDB_BASICS},
+};
 
 /// A handle that permits searching IMDb media records with relevance ranking.
 ///
@@ -40,7 +38,9 @@ impl Searcher {
     /// An existing `Index` can be opened with `Index::open`, and a new `Index`
     /// can be created with `Index::create`.
     pub fn new(idx: Index) -> Searcher {
-        Searcher { idx }
+        Searcher {
+            idx,
+        }
     }
 
     /// Execute a search with the given `Query`.
@@ -52,17 +52,13 @@ impl Searcher {
     ///
     /// Depending on the query, the behavior of search can vary:
     ///
-    /// * When the query specifies a similarity function, then the results are
-    ///   ranked by that function.
-    /// * When the query contains a name to search by and a name scorer, then
-    ///   results are ranked by the name scorer. If the query specifies a
-    ///   similarity function, then results are first ranked by the name
-    ///   scorer, and then re-ranked by the similarity function.
-    /// * When no name or no name scorer are specified by the query, then
-    ///   this search will do a (slow) exhaustive search over all media records
-    ///   in IMDb. As a special case, if the query contains a TV show ID, then
-    ///   only records in that TV show are searched, and this is generally
-    ///   fast.
+    /// * When the query specifies a similarity function, then the results are ranked by that function.
+    /// * When the query contains a name to search by and a name scorer, then results are ranked by the name scorer. If the query
+    ///   specifies a similarity function, then results are first ranked by the name scorer, and then re-ranked by the similarity
+    ///   function.
+    /// * When no name or no name scorer are specified by the query, then this search will do a (slow) exhaustive search over all
+    ///   media records in IMDb. As a special case, if the query contains a TV show ID, then only records in that TV show are
+    ///   searched, and this is generally fast.
     /// * If the query is empty, then no results are returned.
     ///
     /// If there was a problem reading the underlying index or the IMDb data,
@@ -190,7 +186,11 @@ impl Searcher {
         Ok(results)
     }
 
-    fn similarity(&self, query: &Query, name: &str) -> f64 {
+    fn similarity(
+        &self,
+        query: &Query,
+        name: &str,
+    ) -> f64 {
         match query.name {
             None => 0.0,
             Some(ref qname) => query.similarity.similarity(qname, name),
@@ -254,12 +254,12 @@ impl Query {
     /// Searching with an empty query always yields no results.
     pub fn is_empty(&self) -> bool {
         self.name.as_ref().map_or(true, |n| n.is_empty())
-        && self.kinds.is_empty()
-        && self.year.is_none()
-        && self.votes.is_none()
-        && self.season.is_none()
-        && self.episode.is_none()
-        && self.tvshow_id.is_none()
+            && self.kinds.is_empty()
+            && self.year.is_none()
+            && self.votes.is_none()
+            && self.season.is_none()
+            && self.episode.is_none()
+            && self.tvshow_id.is_none()
     }
 
     /// Set the name to query by.
@@ -270,7 +270,10 @@ impl Query {
     /// Note that if no name is provided in a query, then it is possible that
     /// searching with the query will require exhaustively looking at every
     /// record in IMDb. This will be slower.
-    pub fn name(mut self, name: &str) -> Query {
+    pub fn name(
+        mut self,
+        name: &str,
+    ) -> Query {
         self.name = Some(name.to_string());
         self
     }
@@ -288,7 +291,10 @@ impl Query {
     /// in IMDb. Normally, when the name index is used, only the (small number)
     /// of results returned by searching the name are ranked. Typically, these
     /// sorts of queries are useful for evaluation purposes, but not much else.
-    pub fn name_scorer(mut self, scorer: Option<NameScorer>) -> Query {
+    pub fn name_scorer(
+        mut self,
+        scorer: Option<NameScorer>,
+    ) -> Query {
         self.name_scorer = scorer;
         self
     }
@@ -304,7 +310,10 @@ impl Query {
     /// query.
     ///
     /// By default, no similarity function is used.
-    pub fn similarity(mut self, sim: Similarity) -> Query {
+    pub fn similarity(
+        mut self,
+        sim: Similarity,
+    ) -> Query {
         self.similarity = sim;
         self
     }
@@ -315,7 +324,10 @@ impl Query {
     /// performance. This is a normal restriction found in most information
     /// retrieval systems. That is, deep paging through result sets is
     /// expensive.
-    pub fn size(mut self, size: usize) -> Query {
+    pub fn size(
+        mut self,
+        size: usize,
+    ) -> Query {
         self.size = size;
         self
     }
@@ -327,7 +339,10 @@ impl Query {
     ///
     /// Note that it is not possible to remove title kinds from an existing
     /// query. Instead, build a new query from scratch.
-    pub fn kind(mut self, kind: TitleKind) -> Query {
+    pub fn kind(
+        mut self,
+        kind: TitleKind,
+    ) -> Query {
         if !self.kinds.contains(&kind) {
             self.kinds.push(kind);
         }
@@ -337,7 +352,10 @@ impl Query {
     /// Set the lower inclusive bound on a title's year.
     ///
     /// This applies to either the title's start or end years.
-    pub fn year_ge(mut self, year: u32) -> Query {
+    pub fn year_ge(
+        mut self,
+        year: u32,
+    ) -> Query {
         self.year.start = Some(year);
         self
     }
@@ -345,19 +363,28 @@ impl Query {
     /// Set the upper inclusive bound on a title's year.
     ///
     /// This applies to either the title's start or end years.
-    pub fn year_le(mut self, year: u32) -> Query {
+    pub fn year_le(
+        mut self,
+        year: u32,
+    ) -> Query {
         self.year.end = Some(year);
         self
     }
 
     /// Set the lower inclusive bound on a title's number of votes.
-    pub fn votes_ge(mut self, votes: u32) -> Query {
+    pub fn votes_ge(
+        mut self,
+        votes: u32,
+    ) -> Query {
         self.votes.start = Some(votes);
         self
     }
 
     /// Set the upper inclusive bound on a title's number of votes.
-    pub fn votes_le(mut self, votes: u32) -> Query {
+    pub fn votes_le(
+        mut self,
+        votes: u32,
+    ) -> Query {
         self.votes.end = Some(votes);
         self
     }
@@ -365,7 +392,10 @@ impl Query {
     /// Set the lower inclusive bound on a title's season.
     ///
     /// This automatically limits all results to episodes.
-    pub fn season_ge(mut self, season: u32) -> Query {
+    pub fn season_ge(
+        mut self,
+        season: u32,
+    ) -> Query {
         self.season.start = Some(season);
         self
     }
@@ -373,7 +403,10 @@ impl Query {
     /// Set the upper inclusive bound on a title's season.
     ///
     /// This automatically limits all results to episodes.
-    pub fn season_le(mut self, season: u32) -> Query {
+    pub fn season_le(
+        mut self,
+        season: u32,
+    ) -> Query {
         self.season.end = Some(season);
         self
     }
@@ -381,7 +414,10 @@ impl Query {
     /// Set the lower inclusive bound on a title's episode number.
     ///
     /// This automatically limits all results to episodes.
-    pub fn episode_ge(mut self, episode: u32) -> Query {
+    pub fn episode_ge(
+        mut self,
+        episode: u32,
+    ) -> Query {
         self.episode.start = Some(episode);
         self
     }
@@ -389,7 +425,10 @@ impl Query {
     /// Set the upper inclusive bound on a title's episode number.
     ///
     /// This automatically limits all results to episodes.
-    pub fn episode_le(mut self, episode: u32) -> Query {
+    pub fn episode_le(
+        mut self,
+        episode: u32,
+    ) -> Query {
         self.episode.end = Some(episode);
         self
     }
@@ -398,7 +437,10 @@ impl Query {
     /// IMDb ID.
     ///
     /// This automatically limits all results to episodes.
-    pub fn tvshow_id(mut self, tvshow_id: &str) -> Query {
+    pub fn tvshow_id(
+        mut self,
+        tvshow_id: &str,
+    ) -> Query {
         self.tvshow_id = Some(tvshow_id.to_string());
         self
     }
@@ -407,22 +449,24 @@ impl Query {
     ///
     /// Note that this only applies filters in this query. e.g., The name
     /// aspect of the query, if one exists, is ignored.
-    fn matches(&self, ent: &MediaEntity) -> bool {
-        self.matches_title(&ent.title())
-        && self.matches_rating(ent.rating())
-        && self.matches_episode(ent.episode())
+    fn matches(
+        &self,
+        ent: &MediaEntity,
+    ) -> bool {
+        self.matches_title(&ent.title()) && self.matches_rating(ent.rating()) && self.matches_episode(ent.episode())
     }
 
     /// Returns true if and only if the given title matches this query.
     ///
     /// This ignores non-title filters.
-    fn matches_title(&self, title: &Title) -> bool {
+    fn matches_title(
+        &self,
+        title: &Title,
+    ) -> bool {
         if !self.kinds.is_empty() && !self.kinds.contains(&title.kind) {
             return false;
         }
-        if !self.year.contains(title.start_year.as_ref())
-            && !self.year.contains(title.end_year.as_ref())
-        {
+        if !self.year.contains(title.start_year.as_ref()) && !self.year.contains(title.end_year.as_ref()) {
             return false;
         }
         true
@@ -434,7 +478,10 @@ impl Query {
     ///
     /// If a rating filter is present and `None` is given, then this always
     /// returns `false`.
-    fn matches_rating(&self, rating: Option<&Rating>) -> bool {
+    fn matches_rating(
+        &self,
+        rating: Option<&Rating>,
+    ) -> bool {
         if !self.votes.contains(rating.map(|r| &r.votes)) {
             return false;
         }
@@ -447,7 +494,10 @@ impl Query {
     ///
     /// If an episode filter is present and `None` is given, then this always
     /// returns `false`.
-    fn matches_episode(&self, ep: Option<&Episode>) -> bool {
+    fn matches_episode(
+        &self,
+        ep: Option<&Episode>,
+    ) -> bool {
         if !self.season.contains(ep.and_then(|e| e.season.as_ref())) {
             return false;
         }
@@ -491,10 +541,7 @@ impl Query {
     /// function, if present. This can make exhaustive searches, particularly
     /// the ones used during an evaluation, a bit faster.
     fn has_filters(&self) -> bool {
-        self.needs_rating()
-        || self.needs_episode()
-        || !self.kinds.is_empty()
-        || !self.year.is_none()
+        self.needs_rating() || self.needs_episode() || !self.kinds.is_empty() || !self.year.is_none()
     }
 
     /// Returns true if and only this query has only title filters.
@@ -512,15 +559,17 @@ impl Query {
 
     /// Returns true if and only if this query has an episode filter.
     fn needs_episode(&self) -> bool {
-        !self.season.is_none()
-        || !self.episode.is_none()
-        || self.tvshow_id.is_some()
+        !self.season.is_none() || !self.episode.is_none() || self.tvshow_id.is_some()
     }
 }
 
 impl Serialize for Query {
-    fn serialize<S>(&self, s: S) -> result::Result<S::Ok, S::Error>
-    where S: Serializer
+    fn serialize<S>(
+        &self,
+        s: S,
+    ) -> result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
     {
         s.serialize_str(&self.to_string())
     }
@@ -528,14 +577,13 @@ impl Serialize for Query {
 
 impl<'a> Deserialize<'a> for Query {
     fn deserialize<D>(d: D) -> result::Result<Query, D::Error>
-    where D: Deserializer<'a>
+    where
+        D: Deserializer<'a>,
     {
         use serde::de::Error;
 
         let querystr = String::deserialize(d)?;
-        querystr.parse().map_err(|e: self::Error| {
-            D::Error::custom(e.to_string())
-        })
+        querystr.parse().map_err(|e: self::Error| D::Error::custom(e.to_string()))
     }
 }
 
@@ -575,11 +623,21 @@ impl FromStr for Query {
 
             let (name, val) = (dcaps["name"].trim(), dcaps["val"].trim());
             match name {
-                "size" => { q.size = val.parse().map_err(Error::number)?; }
-                "year" => { q.year = val.parse()?; }
-                "votes" => { q.votes = val.parse()?; }
-                "season" => { q.season = val.parse()?; }
-                "episode" => { q.episode = val.parse()?; }
+                "size" => {
+                    q.size = val.parse().map_err(Error::number)?;
+                }
+                "year" => {
+                    q.year = val.parse()?;
+                }
+                "votes" => {
+                    q.votes = val.parse()?;
+                }
+                "season" => {
+                    q.season = val.parse()?;
+                }
+                "episode" => {
+                    q.episode = val.parse()?;
+                }
                 "tvseries" | "tvshow" | "show" => {
                     q.tvshow_id = Some(val.to_string());
                 }
@@ -587,11 +645,10 @@ impl FromStr for Query {
                     q.similarity = val.parse()?;
                 }
                 "scorer" => {
-                    if val == "none" {
-                        q.name_scorer = None;
-                    } else {
-                        q.name_scorer = Some(val.parse()?);
-                    }
+                    q.name_scorer = match val {
+                        "none" => None,
+                        _ => Some(val.parse()?),
+                    };
                 }
                 unk => return Err(Error::unknown_directive(unk)),
             }
@@ -604,7 +661,10 @@ impl FromStr for Query {
 }
 
 impl fmt::Display for Query {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         match self.name_scorer {
             None => f.write_str("{scorer:none}")?,
             Some(ref scorer) => write!(f, "{{scorer:{}}}", scorer)?,
@@ -684,7 +744,11 @@ impl Similarity {
     /// then this always returns `1.0`.
     ///
     /// The returned value is always in the range `(0, 1]`.
-    pub fn similarity(self, q1: &str, q2: &str) -> f64 {
+    pub fn similarity(
+        self,
+        q1: &str,
+        q2: &str,
+    ) -> f64 {
         let sim = match self {
             Similarity::None => 1.0,
             Similarity::Levenshtein => {
@@ -718,7 +782,10 @@ impl Default for Similarity {
 }
 
 impl fmt::Display for Similarity {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         match *self {
             Similarity::None => write!(f, "none"),
             Similarity::Levenshtein => write!(f, "levenshtein"),
@@ -753,7 +820,10 @@ struct Range<T> {
 
 impl<T> Range<T> {
     pub fn none() -> Range<T> {
-        Range { start: None, end: None }
+        Range {
+            start: None,
+            end: None,
+        }
     }
 
     pub fn is_none(&self) -> bool {
@@ -762,7 +832,10 @@ impl<T> Range<T> {
 }
 
 impl<T: PartialOrd> Range<T> {
-    pub fn contains(&self, t: Option<&T>) -> bool {
+    pub fn contains(
+        &self,
+        t: Option<&T>,
+    ) -> bool {
         let t = match t {
             None => return self.is_none(),
             Some(t) => t,
@@ -777,7 +850,10 @@ impl<T: PartialOrd> Range<T> {
 }
 
 impl<T: fmt::Display + PartialEq> fmt::Display for Range<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         match (&self.start, &self.end) {
             (&None, &None) => write!(f, "-"),
             (&Some(ref s), &None) => write!(f, "{}-", s),
@@ -788,7 +864,7 @@ impl<T: fmt::Display + PartialEq> fmt::Display for Range<T> {
     }
 }
 
-impl<E: Fail, T: FromStr<Err=E>> FromStr for Range<T> {
+impl<E: Fail, T: FromStr<Err = E>> FromStr for Range<T> {
     type Err = Error;
 
     fn from_str(range: &str) -> Result<Range<T>> {
@@ -801,7 +877,10 @@ impl<E: Fail, T: FromStr<Err=E>> FromStr for Range<T> {
                 // need a `Clone` bound.
                 let start = range.parse().map_err(Error::number)?;
                 let end = range.parse().map_err(Error::number)?;
-                return Ok(Range { start: Some(start), end: Some(end) });
+                return Ok(Range {
+                    start: Some(start),
+                    end: Some(end),
+                });
             }
             Some(i) => {
                 let (start, end) = range.split_at(i);
@@ -810,24 +889,18 @@ impl<E: Fail, T: FromStr<Err=E>> FromStr for Range<T> {
         };
         Ok(match (start.is_empty(), end.is_empty()) {
             (true, true) => Range::none(),
-            (true, false) => {
-                Range {
-                    start: None,
-                    end: Some(end.parse().map_err(Error::number)?),
-                }
-            }
-            (false, true) => {
-                Range {
-                    start: Some(start.parse().map_err(Error::number)?),
-                    end: None,
-                }
-            }
-            (false, false) => {
-                Range {
-                    start: Some(start.parse().map_err(Error::number)?),
-                    end: Some(end.parse().map_err(Error::number)?),
-                }
-            }
+            (true, false) => Range {
+                start: None,
+                end: Some(end.parse().map_err(Error::number)?),
+            },
+            (false, true) => Range {
+                start: Some(start.parse().map_err(Error::number)?),
+                end: None,
+            },
+            (false, false) => Range {
+                start: Some(start.parse().map_err(Error::number)?),
+                end: Some(end.parse().map_err(Error::number)?),
+            },
         })
     }
 }
@@ -841,19 +914,49 @@ mod tests {
     #[test]
     fn ranges() {
         let r: Range<u32> = "5-10".parse().unwrap();
-        assert_eq!(r, Range { start: Some(5), end: Some(10) });
+        assert_eq!(
+            r,
+            Range {
+                start: Some(5),
+                end: Some(10),
+            }
+        );
 
         let r: Range<u32> = "5-".parse().unwrap();
-        assert_eq!(r, Range { start: Some(5), end: None });
+        assert_eq!(
+            r,
+            Range {
+                start: Some(5),
+                end: None,
+            }
+        );
 
         let r: Range<u32> = "-10".parse().unwrap();
-        assert_eq!(r, Range { start: None, end: Some(10) });
+        assert_eq!(
+            r,
+            Range {
+                start: None,
+                end: Some(10),
+            }
+        );
 
         let r: Range<u32> = "5-5".parse().unwrap();
-        assert_eq!(r, Range { start: Some(5), end: Some(5) });
+        assert_eq!(
+            r,
+            Range {
+                start: Some(5),
+                end: Some(5),
+            }
+        );
 
         let r: Range<u32> = "5".parse().unwrap();
-        assert_eq!(r, Range { start: Some(5), end: Some(5) });
+        assert_eq!(
+            r,
+            Range {
+                start: Some(5),
+                end: Some(5),
+            }
+        );
     }
 
     #[test]
@@ -865,18 +968,13 @@ mod tests {
         assert_eq!(q, Query::new().kind(TitleKind::Movie));
 
         let q: Query = "{movie} {tvshow}".parse().unwrap();
-        assert_eq!(q, Query::new()
-            .kind(TitleKind::Movie).kind(TitleKind::TVSeries));
+        assert_eq!(q, Query::new().kind(TitleKind::Movie).kind(TitleKind::TVSeries));
 
         let q: Query = "{movie}{tvshow}".parse().unwrap();
-        assert_eq!(q, Query::new()
-            .kind(TitleKind::Movie).kind(TitleKind::TVSeries));
+        assert_eq!(q, Query::new().kind(TitleKind::Movie).kind(TitleKind::TVSeries));
 
         let q: Query = "foo {movie} bar {tvshow} baz".parse().unwrap();
-        assert_eq!(q, Query::new()
-            .name("foo bar baz")
-            .kind(TitleKind::Movie)
-            .kind(TitleKind::TVSeries));
+        assert_eq!(q, Query::new().name("foo bar baz").kind(TitleKind::Movie).kind(TitleKind::TVSeries));
 
         let q: Query = "{size:5}".parse().unwrap();
         assert_eq!(q, Query::new().size(5));
@@ -918,12 +1016,12 @@ mod tests {
         let q = Query::new()
             .name("foo bar baz")
             .size(31)
-            .season_ge(4).season_le(5)
+            .season_ge(4)
+            .season_le(5)
             .kind(TitleKind::TVSeries)
             .kind(TitleKind::Movie)
             .similarity(Similarity::Jaro);
-        let expected =
-            "{scorer:okapibm25} {sim:jaro} {size:31} {movie} {tvSeries} {season:4-5} foo bar baz";
+        let expected = "{scorer:okapibm25} {sim:jaro} {size:31} {movie} {tvSeries} {season:4-5} foo bar baz";
         assert_eq!(q.to_string(), expected);
     }
 
@@ -933,12 +1031,11 @@ mod tests {
         struct Test {
             query: Query,
         }
-        let query = Query::new()
-            .name("foo bar baz")
-            .name_scorer(None)
-            .size(31)
-            .season_ge(4).season_le(4);
-        let got = serde_json::to_string(&Test { query }).unwrap();
+        let query = Query::new().name("foo bar baz").name_scorer(None).size(31).season_ge(4).season_le(4);
+        let got = serde_json::to_string(&Test {
+            query,
+        })
+        .unwrap();
 
         let expected = r#"{"query":"{scorer:none} {sim:none} {size:31} {season:4} foo bar baz"}"#;
         assert_eq!(got, expected);
@@ -947,8 +1044,7 @@ mod tests {
     #[test]
     fn query_deserialize() {
         let json = r#"{"query": "foo {size:30} bar {season:4} baz {show}"}"#;
-        let expected =
-            "{size:30} {season:4} {show} foo bar baz".parse().unwrap();
+        let expected = "{size:30} {season:4} {show} foo bar baz".parse().unwrap();
 
         #[derive(Deserialize)]
         struct Test {

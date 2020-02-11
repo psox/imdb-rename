@@ -1,18 +1,16 @@
-use std::collections::BTreeMap;
-use std::fmt;
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
-use std::vec;
-
 use failure::bail;
-use serde::{Deserialize, Serialize};
-use imdb_index::{
-    Index, IndexBuilder, MediaEntity, NameScorer, NgramType, Query, Searcher,
-    Similarity,
-};
+use imdb_index::{Index, IndexBuilder, MediaEntity, NameScorer, NgramType, Query, Searcher, Similarity};
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::BTreeMap,
+    fmt,
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
+    vec,
+};
 use toml;
 
 use crate::Result;
@@ -32,7 +30,7 @@ lazy_static! {
 #[derive(Clone, Debug, Deserialize)]
 struct Truth {
     #[serde(rename = "task")]
-    tasks: Vec<Task>
+    tasks: Vec<Task>,
 }
 
 /// A task or "information need" defined by the truth data. Each task
@@ -96,10 +94,12 @@ impl Spec {
     /// Set the result size for this specification.
     ///
     /// This returns an error if the given size is less than `1`.
-    pub fn with_result_size(mut self, result_size: usize) -> Result<Spec> {
+    pub fn with_result_size(
+        mut self,
+        result_size: usize,
+    ) -> Result<Spec> {
         if result_size < 1 {
-            bail!("result size {} is invalid, must be greater than 0",
-                  result_size);
+            bail!("result size {} is invalid, must be greater than 0", result_size);
         }
         self.result_size = result_size;
         Ok(self)
@@ -108,25 +108,31 @@ impl Spec {
     /// Set the ngram size for this specification.
     ///
     /// This returns an error if the given size is less than `2`.
-    pub fn with_ngram_size(mut self, ngram_size: usize) -> Result<Spec> {
+    pub fn with_ngram_size(
+        mut self,
+        ngram_size: usize,
+    ) -> Result<Spec> {
         if ngram_size < 2 {
-            bail!(
-                "ngram size {} is invalid, must be greater than 1",
-                ngram_size,
-            );
+            bail!("ngram size {} is invalid, must be greater than 1", ngram_size,);
         }
         self.ngram_size = ngram_size;
         Ok(self)
     }
 
     /// Set the ngram type for this specification.
-    pub fn with_ngram_type(mut self, ngram_type: NgramType) -> Spec {
+    pub fn with_ngram_type(
+        mut self,
+        ngram_type: NgramType,
+    ) -> Spec {
         self.ngram_type = ngram_type;
         self
     }
 
     /// Set the similarity ranker function for this specification.
-    pub fn with_similarity(mut self, sim: Similarity) -> Spec {
+    pub fn with_similarity(
+        mut self,
+        sim: Similarity,
+    ) -> Spec {
         self.sim = sim;
         self
     }
@@ -136,7 +142,10 @@ impl Spec {
     /// Note that if the given scorer is `None`, then an evaluation will likely
     /// be quite slow, since each information need will result in an exhaustive
     /// search of the corpus.
-    pub fn with_scorer(mut self, scorer: Option<NameScorer>) -> Spec {
+    pub fn with_scorer(
+        mut self,
+        scorer: Option<NameScorer>,
+    ) -> Spec {
         self.scorer = scorer;
         self
     }
@@ -149,7 +158,10 @@ impl Spec {
     ) -> Result<Evaluation> {
         let searcher = Searcher::new(self.index(data_dir, eval_dir)?);
         Ok(Evaluation {
-            evaluator: Evaluator { spec: self, searcher },
+            evaluator: Evaluator {
+                spec: self,
+                searcher,
+            },
             tasks: TRUTH.clone().tasks.into_iter(),
         })
     }
@@ -164,19 +176,21 @@ impl Spec {
     ) -> Result<Evaluation> {
         let searcher = Searcher::new(self.index(data_dir, eval_dir)?);
         Ok(Evaluation {
-            evaluator: Evaluator { spec: self, searcher },
+            evaluator: Evaluator {
+                spec: self,
+                searcher,
+            },
             tasks: Truth::from_path(truth_path)?.tasks.into_iter(),
         })
     }
 
     /// Create a query derived from this specification and a particular
     /// information need or "task."
-    fn query(&self, task: &Task) -> Query {
-        Query::new()
-            .name(&task.query)
-            .name_scorer(self.scorer.clone())
-            .similarity(self.sim.clone())
-            .size(self.result_size)
+    fn query(
+        &self,
+        task: &Task,
+    ) -> Query {
+        Query::new().name(&task.query).name_scorer(self.scorer.clone()).similarity(self.sim.clone()).size(self.result_size)
     }
 
     /// Either open or create an index suitable for this specification.
@@ -192,16 +206,16 @@ impl Spec {
         Ok(if index_dir.exists() {
             Index::open(data_dir, index_dir)?
         } else {
-            IndexBuilder::new()
-                .ngram_size(self.ngram_size)
-                .ngram_type(self.ngram_type)
-                .create(data_dir, index_dir)?
+            IndexBuilder::new().ngram_size(self.ngram_size).ngram_type(self.ngram_type).create(data_dir, index_dir)?
         })
     }
 
     /// The sub-directory of `eval_dir` in which to store this specification's
     /// index.
-    fn index_dir<P: AsRef<Path>>(&self, eval_dir: P) -> PathBuf {
+    fn index_dir<P: AsRef<Path>>(
+        &self,
+        eval_dir: P,
+    ) -> PathBuf {
         eval_dir.as_ref().join(self.index_name())
     }
 
@@ -222,7 +236,10 @@ impl Default for Spec {
 }
 
 impl fmt::Display for Spec {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
         let scorer = match self.scorer {
             None => "none".to_string(),
             Some(ref scorer) => scorer.to_string(),
@@ -230,11 +247,7 @@ impl fmt::Display for Spec {
         write!(
             f,
             "size-{}_ngram-{}_ngram-type-{}_sim-{}_scorer-{}",
-            self.result_size,
-            self.ngram_size,
-            self.ngram_type,
-            self.sim,
-            scorer,
+            self.result_size, self.ngram_size, self.ngram_type, self.sim, scorer,
         )
     }
 }
@@ -374,7 +387,10 @@ struct Evaluator<'s> {
 impl<'s> Evaluator<'s> {
     /// Run this evaluator on a single information need and return the
     /// evaluation.
-    fn run(&mut self, task: &Task) -> Result<TaskResult> {
+    fn run(
+        &mut self,
+        task: &Task,
+    ) -> Result<TaskResult> {
         let start = Instant::now();
         let rank = self.rank(task)?;
         let duration = Instant::now().duration_since(start);
@@ -433,7 +449,10 @@ impl<'s> Evaluator<'s> {
     ///
     /// There are other strategies, but in general, we want to reward high
     /// precision rankers.
-    fn rank(&mut self, task: &Task) -> Result<Option<u64>> {
+    fn rank(
+        &mut self,
+        task: &Task,
+    ) -> Result<Option<u64>> {
         let results = self.searcher.search(&self.spec.query(&task))?;
 
         let mut rank = results.len() as u64;
@@ -460,7 +479,10 @@ impl<'s> Evaluator<'s> {
 
 /// Compares two floating point numbers for equality approximately for some
 /// epsilon.
-fn approx_eq(x1: f64, x2: f64) -> bool {
+fn approx_eq(
+    x1: f64,
+    x2: f64,
+) -> bool {
     // We used a fixed error because it's good enough in practice.
     (x1 - x2).abs() <= 0.000_000_000_1
 }
@@ -488,8 +510,7 @@ mod tests {
             sim: Similarity::None,
             scorer: Some(NameScorer::OkapiBM25),
         };
-        let expected =
-            "size-30_ngram-3_ngram-type-window_sim-none_scorer-okapibm25";
+        let expected = "size-30_ngram-3_ngram-type-window_sim-none_scorer-okapibm25";
         assert_eq!(spec.to_string(), expected);
 
         let spec = Spec {

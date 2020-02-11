@@ -23,7 +23,7 @@ pub fn choose(
 ) -> Result<MediaEntity> {
     if results.is_empty() {
         bail!("no search results available for query");
-    } else if (results.len() == 1) | ((results[0].score() - results[1].score()) >= good_threshold) {
+    } else if (results.len() == 1) || ((results[0].score() - results[1].score()) >= good_threshold) {
         return Ok(results[0].clone().into_value());
     }
 
@@ -33,7 +33,10 @@ pub fn choose(
 }
 
 /// Reads a number from stdin in the given inclusive range.
-pub fn read_number(start: usize, end: usize) -> Result<usize> {
+pub fn read_number(
+    start: usize,
+    end: usize,
+) -> Result<usize> {
     let mut stdout = io::stdout();
     write!(stdout, "Please enter your choice [{}-{}]: ", start, end)?;
     stdout.flush()?;
@@ -42,12 +45,7 @@ pub fn read_number(start: usize, end: usize) -> Result<usize> {
     io::stdin().read_line(&mut response)?;
     let choice: usize = response.trim().parse()?;
     if choice < start || choice > end {
-        bail!(
-            "invalid choice: {} is not in range [{}-{}]",
-            choice,
-            start,
-            end
-        );
+        bail!("invalid choice: {} is not in range [{}-{}]", choice, start, end);
     }
     Ok(choice)
 }
@@ -109,10 +107,7 @@ fn write_tsv_title<W: io::Write>(
         ent.title().id,
         ent.title().kind,
         ent.title().title,
-        ent.title()
-            .start_year
-            .map(|y| y.to_string())
-            .unwrap_or_else(|| "N/A".to_string()),
+        ent.title().start_year.map(|y| y.to_string()).unwrap_or_else(|| "N/A".to_string()),
     )?;
     writeln!(wtr)?;
     Ok(())
@@ -126,12 +121,7 @@ fn write_tsv_episode<W: io::Write>(
     tvshow: &Title,
     ep: &Episode,
 ) -> Result<()> {
-    let tvinfo = format!(
-        "S{:02}E{:02} {}",
-        ep.season.unwrap_or(0),
-        ep.episode.unwrap_or(0),
-        tvshow.title,
-    );
+    let tvinfo = format!("S{:02}E{:02} {}", ep.season.unwrap_or(0), ep.episode.unwrap_or(0), tvshow.title,);
     write!(
         wtr,
         "{}\t{:0.3}\t{}\t{}\t{}\t{}\t{}",
@@ -140,10 +130,7 @@ fn write_tsv_episode<W: io::Write>(
         ent.title().id,
         ent.title().kind,
         ent.title().title,
-        ent.title()
-            .start_year
-            .map(|y| y.to_string())
-            .unwrap_or_else(|| "N/A".to_string()),
+        ent.title().start_year.map(|y| y.to_string()).unwrap_or_else(|| "N/A".to_string()),
         tvinfo,
     )?;
     writeln!(wtr)?;

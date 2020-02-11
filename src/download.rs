@@ -1,12 +1,12 @@
-use std::fs::{self, File};
-use std::io;
-use std::path::{Path, PathBuf};
-
+use crate::Result;
 use failure::bail;
 use flate2::read::GzDecoder;
 use reqwest;
-
-use crate::Result;
+use std::{
+    fs::{self, File},
+    io,
+    path::{Path, PathBuf},
+};
 
 /// The base URL to the IMDb data set.
 ///
@@ -17,12 +17,7 @@ const IMDB_BASE_URL: &str = "https://datasets.imdbws.com";
 /// All of the data sets we care about.
 ///
 /// We leave out cast/crew because we don't need them for renaming files.
-const DATA_SETS: &[&str] = &[
-    "title.akas.tsv.gz",
-    "title.basics.tsv.gz",
-    "title.episode.tsv.gz",
-    "title.ratings.tsv.gz",
-];
+const DATA_SETS: &[&str] = &["title.akas.tsv.gz", "title.basics.tsv.gz", "title.episode.tsv.gz", "title.ratings.tsv.gz"];
 
 /// Download ensures that all of the IMDb data files exist and have non-zero
 /// size in the given directory. Any path that does not meet these criteria
@@ -54,7 +49,10 @@ pub fn update_all<P: AsRef<Path>>(dir: P) -> Result<()> {
 
 /// Downloads a single data set, decompresses it and writes it to the
 /// corresponding file path in the given directory.
-fn download_one(outdir: &Path, dataset: &'static str) -> Result<()> {
+fn download_one(
+    outdir: &Path,
+    dataset: &'static str,
+) -> Result<()> {
     let outpath = dataset_path(outdir, dataset);
     let mut outfile = File::create(&outpath)?;
 
@@ -81,7 +79,10 @@ fn non_existent_data_sets(dir: &Path) -> Result<Vec<&'static str>> {
 
 /// Build the path on disk for a dataset, given the directory and the dataset
 /// name.
-fn dataset_path(dir: &Path, name: &'static str) -> PathBuf {
+fn dataset_path(
+    dir: &Path,
+    name: &'static str,
+) -> PathBuf {
     let mut path = dir.join(name);
     // We drop the gz extension since we decompress before writing to disk.
     path.set_extension("");
@@ -98,8 +99,8 @@ fn write_sorted_csv_records<R: io::Read, W: io::Write>(
     rdr: R,
     wtr: W,
 ) -> Result<()> {
-    use std::io::Write;
     use bstr::{io::BufReadExt, ByteSlice};
+    use std::io::Write;
 
     // We actually only sort the raw lines here instead of parsing CSV records,
     // since parsing into CSV records has fairly substantial memory overhead.
@@ -120,12 +121,7 @@ fn write_sorted_csv_records<R: io::Read, W: io::Write>(
         // where there are duplicate rows.
         let first = match line.split_str("\t").next() {
             Some(first) => first,
-            None => {
-                bail!(
-                    "expected to find one tab-delimited field in '{:?}'",
-                    line.as_bstr(),
-                )
-            }
+            None => bail!("expected to find one tab-delimited field in '{:?}'", line.as_bstr(),),
         };
         if i > 0 && prev == Some(first) {
             continue;

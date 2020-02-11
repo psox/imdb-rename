@@ -1,0 +1,83 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'imdb-eval'",
+      "cargo": {
+        "args": ["build", "--bin=imdb-eval", "--package=imdb-eval"],
+        "filter": {
+          "name": "imdb-eval",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'imdb-eval'",
+      "cargo": {
+        "args": ["test", "--no-run", "--bin=imdb-eval", "--package=imdb-eval"],
+        "filter": {
+          "name": "imdb-eval",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'imdb-index'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=imdb-index"],
+        "filter": {
+          "name": "imdb-index",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'imdb-rename'",
+      "cargo": {
+        "args": ["build", "--bin=imdb-rename", "--package=imdb-rename"],
+        "filter": {
+          "name": "imdb-rename",
+          "kind": "bin"
+        }
+      },
+      "args": ["seal.team.s03e09.internal.720p.web.x264-bamboozle[eztv].mkv"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'imdb-rename'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=imdb-rename",
+          "--package=imdb-rename"
+        ],
+        "filter": {
+          "name": "imdb-rename",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

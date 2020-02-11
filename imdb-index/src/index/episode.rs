@@ -1,14 +1,14 @@
-use std::cmp;
-use std::path::Path;
-use std::u32;
+use std::{cmp, path::Path, u32};
 
 use byteorder::{ByteOrder, BE};
 use fst::{self, IntoStreamer, Streamer};
 
-use crate::error::{Error, Result};
-use crate::index::csv_file;
-use crate::record::Episode;
-use crate::util::{IMDB_EPISODE, fst_set_builder_file, fst_set_file};
+use crate::{
+    error::{Error, Result},
+    index::csv_file,
+    record::Episode,
+    util::{fst_set_builder_file, fst_set_file, IMDB_EPISODE},
+};
 
 /// The name of the episode index file.
 ///
@@ -76,9 +76,7 @@ impl Index {
             seasons.insert(&buf).map_err(Error::fst)?;
         }
 
-        episodes.sort_by(|e1, e2| {
-            (&e1.id, &e1.tvshow_id).cmp(&(&e2.id, &e2.tvshow_id))
-        });
+        episodes.sort_by(|e1, e2| (&e1.id, &e1.tvshow_id).cmp(&(&e2.id, &e2.tvshow_id)));
         for episode in &episodes {
             buf.clear();
             write_tvshow(&episode, &mut buf)?;
@@ -97,15 +95,15 @@ impl Index {
     /// The episodes are sorted in order of season number and episode number.
     /// Episodes without season/episode numbers are sorted after episodes with
     /// numbers.
-    pub fn seasons(&self, tvshow_id: &[u8]) -> Result<Vec<Episode>> {
+    pub fn seasons(
+        &self,
+        tvshow_id: &[u8],
+    ) -> Result<Vec<Episode>> {
         let mut upper = tvshow_id.to_vec();
         upper.push(0xFF);
 
         let mut episodes = vec![];
-        let mut stream = self.seasons.range()
-            .ge(tvshow_id)
-            .le(upper)
-            .into_stream();
+        let mut stream = self.seasons.range().ge(tvshow_id).le(upper).into_stream();
         while let Some(episode_bytes) = stream.next() {
             episodes.push(read_episode(episode_bytes)?);
         }
@@ -133,10 +131,7 @@ impl Index {
         upper.extend_from_slice(&u32_to_bytes(u32::MAX));
 
         let mut episodes = vec![];
-        let mut stream = self.seasons.range()
-            .ge(lower)
-            .le(upper)
-            .into_stream();
+        let mut stream = self.seasons.range().ge(lower).le(upper).into_stream();
         while let Some(episode_bytes) = stream.next() {
             episodes.push(read_episode(episode_bytes)?);
         }
@@ -147,14 +142,14 @@ impl Index {
     ///
     /// If no episode information for the given ID exists, then `None` is
     /// returned.
-    pub fn episode(&self, episode_id: &[u8]) -> Result<Option<Episode>> {
+    pub fn episode(
+        &self,
+        episode_id: &[u8],
+    ) -> Result<Option<Episode>> {
         let mut upper = episode_id.to_vec();
         upper.push(0xFF);
 
-        let mut stream = self.tvshows.range()
-            .ge(episode_id)
-            .le(upper)
-            .into_stream();
+        let mut stream = self.tvshows.range().ge(episode_id).le(upper).into_stream();
         if let Some(tvshow_bytes) = stream.next() {
             return Ok(Some(read_tvshow(tvshow_bytes)?));
         }
@@ -175,19 +170,12 @@ fn read_sorted_episodes(data_dir: &Path) -> Result<Vec<Episode>> {
     Ok(records)
 }
 
-fn cmp_episode(ep1: &Episode, ep2: &Episode) -> cmp::Ordering {
-    let k1 = (
-        &ep1.tvshow_id,
-        ep1.season.unwrap_or(u32::MAX),
-        ep1.episode.unwrap_or(u32::MAX),
-        &ep1.id,
-    );
-    let k2 = (
-        &ep2.tvshow_id,
-        ep2.season.unwrap_or(u32::MAX),
-        ep2.episode.unwrap_or(u32::MAX),
-        &ep2.id,
-    );
+fn cmp_episode(
+    ep1: &Episode,
+    ep2: &Episode,
+) -> cmp::Ordering {
+    let k1 = (&ep1.tvshow_id, ep1.season.unwrap_or(u32::MAX), ep1.episode.unwrap_or(u32::MAX), &ep1.id);
+    let k2 = (&ep2.tvshow_id, ep2.season.unwrap_or(u32::MAX), ep2.episode.unwrap_or(u32::MAX), &ep2.id);
     k1.cmp(&k2)
 }
 
@@ -220,7 +208,10 @@ fn read_episode(bytes: &[u8]) -> Result<Episode> {
     })
 }
 
-fn write_episode(ep: &Episode, buf: &mut Vec<u8>) -> Result<()> {
+fn write_episode(
+    ep: &Episode,
+    buf: &mut Vec<u8>,
+) -> Result<()> {
     if ep.tvshow_id.as_bytes().iter().any(|&b| b == 0) {
         bug!("unsupported tvshow id (with NUL byte) for {:?}", ep);
     }
@@ -261,7 +252,10 @@ fn read_tvshow(bytes: &[u8]) -> Result<Episode> {
     })
 }
 
-fn write_tvshow(ep: &Episode, buf: &mut Vec<u8>) -> Result<()> {
+fn write_tvshow(
+    ep: &Episode,
+    buf: &mut Vec<u8>,
+) -> Result<()> {
     if ep.id.as_bytes().iter().any(|&b| b == 0) {
         bug!("unsupported episode id (with NUL byte) for {:?}", ep);
     }
@@ -313,9 +307,9 @@ fn u32_to_bytes(n: u32) -> [u8; 4] {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use crate::index::tests::TestContext;
     use super::Index;
+    use crate::index::tests::TestContext;
+    use std::collections::HashMap;
 
     #[test]
     fn basics() {
